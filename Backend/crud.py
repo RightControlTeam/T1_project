@@ -27,7 +27,7 @@ async def create_user(db: AsyncSession, user_create: schemas.UserCreate) -> User
     if existing_user.scalar_one_or_none():
         raise HTTPException(
             status_code=400,
-            detail=f"Пользователь с никнеймом '{user_create.username}' уже существует"
+            detail=f"User already exists",
         )
     password_hash = get_password_hash(user_create.password)
     db_user = UserDB(
