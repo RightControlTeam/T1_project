@@ -27,7 +27,7 @@ async def read_users(db = Depends(get_db)):
 
 @app.post("/login/", response_model=schemas.LoginResponse)
 async def login(login_data: schemas.UserLogin, db = Depends(get_db)):
-    user, message = await crud.verify_user(db, login_data.username, login_data.password)
+    user, message = await crud.verify_user(db, login_data)
 
     return schemas.LoginResponse(
         success=False if user is None else True,

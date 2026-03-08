@@ -45,13 +45,13 @@ async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User
     result = await db.execute(select(UserDB).where(UserDB.username == username))
     return result.scalar_one_or_none()
 
-async def verify_user(db: AsyncSession, username: str, password: str) -> Tuple[Optional[schemas.UserOut], str]:
-    user = await get_user_by_username(db, username)
+async def verify_user(db: AsyncSession, login_data: schemas.UserLogin) -> Tuple[Optional[schemas.UserOut], str]:
+    user = await get_user_by_username(db, login_data.username)
     if not user:
         return None, "User not found"
     if user.is_deleted:
         return None, "User is deleted"
-    if verify_password(password, user.password_hash):
+    if verify_password(login_data.password, user.password_hash):
         return schemas.UserOut(
             id = user.id,
             username = user.username,
