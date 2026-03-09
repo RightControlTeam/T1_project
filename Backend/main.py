@@ -1,11 +1,14 @@
-from fastapi import FastAPI, Depends
+#main.py
+
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import get_db
 from uvicorn import run
-import schemas
-import crud
+from users.router import router
+
 
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,25 +18,9 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-@app.post("/users/", response_model=schemas.UserOut)
-async def create_user(user: schemas.UserCreate, db = Depends(get_db)):
-    new_user = await crud.create_user(user, db)
-    return new_user
 
-@app.get("/users/", response_model=list[schemas.UserOut])
-async def read_users(db = Depends(get_db)):
-    users = await crud.get_users(0, 100, db)
-    return users
+app.include_router(router)
 
-@app.post("/login/", response_model=schemas.LoginResponse)
-async def login(login_data: schemas.UserLogin, db = Depends(get_db)):
-    user, message = await crud.verify_user(login_data, db)
-
-    return schemas.LoginResponse(
-        success=False if user is None else True,
-        user=user,
-        message=message,
-    )
 
 if __name__ == "__main__":
     run(app, host="0.0.0.0", port=8000)

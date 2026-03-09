@@ -1,11 +1,13 @@
 # crud.py
+
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import UserDB
-from auth import get_password_hash, verify_password
+from .models import UserDB
+from security import get_password_hash, verify_password
 from typing import Optional, Tuple, Sequence
-import schemas
+from . import schemas
 
 
 async def get_user(user_id: int, db: AsyncSession) -> Optional[UserDB]:
@@ -44,6 +46,7 @@ async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> User
 async def get_user_by_username(username: str, db: AsyncSession) -> Optional[UserDB]:
     result = await db.execute(select(UserDB).where(UserDB.username == username))
     return result.scalar_one_or_none()
+
 
 async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> Tuple[Optional[schemas.UserOut], str]:
     user = await get_user_by_username(login_data.username, db)

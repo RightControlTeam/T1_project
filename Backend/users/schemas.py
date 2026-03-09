@@ -1,5 +1,6 @@
 #schemas.py
 
+
 from pydantic import BaseModel
 
 
@@ -7,6 +8,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
     is_admin: bool = False
+
 
 class UserOut(BaseModel):
     id: int
@@ -18,6 +20,7 @@ class UserOut(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
 
 class LoginResponse(BaseModel):
     success: bool
