@@ -1,13 +1,12 @@
-# crud.py
-
-
+#user/crud.py
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import User
-from security import get_password_hash, verify_password
+from security import get_password_hash, verify_password, create_jwt
 from typing import Optional, Tuple, Sequence
 from . import schemas
+from .schemas import LoginResponse
 
 
 async def get_user(user_id: int, db: AsyncSession) -> Optional[User]:
@@ -48,17 +47,34 @@ async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User
     return result.scalar_one_or_none()
 
 
-async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> Tuple[Optional[schemas.UserOut], str]:
+async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> LoginResponse:
     user = await get_user_by_username(login_data.username, db)
-    if not user:
-        return None, "User not found"
-    if user.is_deleted:
-        return None, "User is deleted"
-    if verify_password(login_data.password, user.password_hash):
-        return schemas.UserOut(
-            id = user.id,
-            username = user.username,
-            is_admin= user.is_admin,
-            is_deleted= user.is_deleted
-        ), "Password match"
-    return None, "Password not match"
+
+    if(
+        not user
+        or user.is_deleted
+        or not verify_password(login_data.password, user.password_hash)
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password"
+        )
+
+
+    token_data = {
+        "sub": user.id,
+        "username": user.username,
+        "is_admin": user.is_admin
+    }
+
+    jwt = create_jwt(data=token_data)
+
+    return LoginResponse(
+        jwt = jwt["jwt"],
+        token_type = "bearer",
+        username = user.username,
+        is_admin = user.is_admin,
+        jwt_exp_time = jwt["exp_time"]
+    )
+
+

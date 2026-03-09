@@ -1,4 +1,4 @@
-#models.py
+#user/models.py
 
 
 from sqlalchemy import String

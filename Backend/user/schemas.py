@@ -1,4 +1,4 @@
-#schemas.py
+#user/schemas.py
 
 
 from pydantic import BaseModel
@@ -23,6 +23,8 @@ class UserLogin(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    success: bool
-    message: str
-    user: UserOut | None = None
+    jwt: str
+    token_type: str = "bearer"
+    username: str
+    is_admin: bool = False
+    jwt_exp_time: int

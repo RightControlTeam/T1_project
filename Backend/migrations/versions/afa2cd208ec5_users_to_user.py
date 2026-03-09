@@ -1,4 +1,4 @@
-"""users to user
+"""user to user
 
 Revision ID: afa2cd208ec5
 Revises: 56e9deea2ab0
@@ -19,11 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.rename_table('users', 'user')
+    op.rename_table('user', 'user')
 
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.rename_table('user', 'users')
+    op.rename_table('user', 'user')
 

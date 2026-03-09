@@ -4,7 +4,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
-from users.router import router
+from user.router import router
 
 
 app = FastAPI()
