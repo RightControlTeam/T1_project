@@ -4,27 +4,27 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from .models import UserDB
+from .models import User
 from security import get_password_hash, verify_password
 from typing import Optional, Tuple, Sequence
 from . import schemas
 
 
-async def get_user(user_id: int, db: AsyncSession) -> Optional[UserDB]:
-    result = await db.execute(select(UserDB).where(UserDB.id == user_id))
+async def get_user(user_id: int, db: AsyncSession) -> Optional[User]:
+    result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
 
 
-async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[UserDB]:
+async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
     result = await db.execute(
-        select(UserDB).offset(skip).limit(limit)
+        select(User).offset(skip).limit(limit)
     )
     return result.scalars().all()
 
 
-async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> UserDB:
+async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> User:
     existing_user = await db.execute(
-        select(UserDB).where(UserDB.username == user_create.username)
+        select(User).where(User.username == user_create.username)
     )
     if existing_user.scalar_one_or_none():
         raise HTTPException(
@@ -32,7 +32,7 @@ async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> User
             detail=f"User already exists",
         )
     password_hash = get_password_hash(user_create.password)
-    db_user = UserDB(
+    db_user = User(
         username = user_create.username,
         password_hash = password_hash,
         is_admin = user_create.is_admin,
@@ -43,8 +43,8 @@ async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> User
     return db_user
 
 
-async def get_user_by_username(username: str, db: AsyncSession) -> Optional[UserDB]:
-    result = await db.execute(select(UserDB).where(UserDB.username == username))
+async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
+    result = await db.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
 
 
