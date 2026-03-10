@@ -4,7 +4,7 @@
 from pydantic import BaseModel
 
 
-class UserCreate(BaseModel):
+class RegisterUser(BaseModel):
     username: str
     password: str
     is_admin: bool = False
@@ -24,5 +24,5 @@ class UserLogin(BaseModel):
 
 class LoginResponse(BaseModel):
     jwt: str
-    token_type: str = "bearer"
+    token_type: str
     jwt_exp_time: int

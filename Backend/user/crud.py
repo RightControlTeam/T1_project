@@ -8,11 +8,15 @@ from .models import User
 from security import get_password_hash, verify_password, generate_login_response
 from typing import Optional, Sequence
 from . import schemas
-from .schemas import LoginResponse
 
 
-async def get_user(user_id: int, db: AsyncSession) -> Optional[User]:
+async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
+
+
+async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
+    result = await db.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
 
 
@@ -23,7 +27,7 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
     return result.scalars().all()
 
 
-async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> User:
+async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> schemas.LoginResponse:
     existing_user = await db.execute(
         select(User).where(User.username == user_create.username)
     )
@@ -41,15 +45,10 @@ async def create_user(user_create: schemas.UserCreate, db: AsyncSession) -> User
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
-    return db_user
+    return generate_login_response(db_user.id)
 
 
-async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
-    result = await db.execute(select(User).where(User.username == username))
-    return result.scalar_one_or_none()
-
-
-async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> LoginResponse:
+async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> schemas.LoginResponse:
     user = await get_user_by_username(login_data.username, db)
 
     if(
