@@ -1,15 +1,13 @@
 #core/config.py
-from pathlib import Path
-from os import path
+
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file= path.join(BASE_DIR, ".env"),
+        env_file= ".env",
         extra="ignore"
     )
 
