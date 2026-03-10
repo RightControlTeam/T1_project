@@ -1,10 +1,12 @@
 #user/crud.py
+
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import User
-from security import get_password_hash, verify_password, create_jwt
-from typing import Optional, Tuple, Sequence
+from security import get_password_hash, verify_password, generate_login_response
+from typing import Optional, Sequence
 from . import schemas
 from .schemas import LoginResponse
 
@@ -60,12 +62,6 @@ async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> LoginR
             detail="Incorrect username or password"
         )
 
-    jwt = create_jwt(user.id)
-
-    return LoginResponse(
-        jwt = jwt["jwt"],
-        token_type = "bearer",
-        jwt_exp_time = jwt["exp_time"]
-    )
+    return generate_login_response(user.id)
 
 

@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, UTC
 from config import settings
 from bcrypt import hashpw, gensalt, checkpw
 from jwt import encode
+from user.schemas import LoginResponse
 
 
 def get_password_hash(plain_password) -> str:
@@ -35,3 +36,13 @@ def create_jwt(user_id: int) -> dict:
         ),
         "exp_time": exp_time
     }
+
+
+def generate_login_response(user_id) -> LoginResponse:
+    jwt = create_jwt(user_id)
+
+    return LoginResponse(
+        jwt = jwt["jwt"],
+        token_type = "bearer",
+        jwt_exp_time = jwt["exp_time"]
+    )
