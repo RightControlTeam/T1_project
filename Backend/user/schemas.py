@@ -25,6 +25,4 @@ class UserLogin(BaseModel):
 class LoginResponse(BaseModel):
     jwt: str
     token_type: str = "bearer"
-    username: str
-    is_admin: bool = False
     jwt_exp_time: int

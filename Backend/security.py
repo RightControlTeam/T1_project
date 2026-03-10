@@ -20,14 +20,12 @@ def verify_password(plain_password, hashed_password) -> bool:
     )
 
 
-def create_jwt(data: dict) -> dict:
-    payload = data.copy()
+def create_jwt(user_id: int) -> dict:
+    payload = {"sub": user_id}
 
     exp_time_delta = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     exp_time = datetime.now(UTC) + exp_time_delta
     exp_time = int(exp_time.timestamp())
-
-    payload["exp"] = exp_time
 
     return {
         "jwt": encode(

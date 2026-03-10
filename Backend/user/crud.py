@@ -60,20 +60,11 @@ async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> LoginR
             detail="Incorrect username or password"
         )
 
-
-    token_data = {
-        "sub": user.id,
-        "username": user.username,
-        "is_admin": user.is_admin
-    }
-
-    jwt = create_jwt(data=token_data)
+    jwt = create_jwt(user.id)
 
     return LoginResponse(
         jwt = jwt["jwt"],
         token_type = "bearer",
-        username = user.username,
-        is_admin = user.is_admin,
         jwt_exp_time = jwt["exp_time"]
     )
 

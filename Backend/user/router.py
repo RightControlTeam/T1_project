@@ -13,13 +13,19 @@ router = APIRouter(
 )
 
 
-@router.post("/register/", response_model=schemas.UserOut)
+@router.post(
+    path ="/register/",
+    response_model=schemas.UserOut
+)
 async def create_user(user: schemas.UserCreate, db = Depends(get_db)):
     new_user = await crud.create_user(user, db)
     return new_user
 
 
-@router.get("/list/", response_model=list[schemas.UserOut])
+@router.get(
+    path = "/list/",
+    response_model=list[schemas.UserOut]
+)
 async def read_users(db = Depends(get_db)):
     users = await crud.get_users(0, 100, db)
     return users
@@ -29,7 +35,7 @@ async def read_users(db = Depends(get_db)):
     path = "/login/",
     response_model = schemas.LoginResponse,
     responses = {401: {"description": "Incorrect username or password"}}
-    )
+)
 async def login(login_data: schemas.UserLogin, db = Depends(get_db)):
     response = await crud.verify_user(login_data, db)
     return response
