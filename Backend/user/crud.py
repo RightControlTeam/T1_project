@@ -4,11 +4,14 @@
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from .models import User
-from security.password import get_password_hash, verify_password
-from security.token import generate_login_response
 from typing import Optional, Sequence
+
+from security.password import get_password_hash, verify_password
+from security.token import generate_login_response, TokenResponse
+from .models import User
 from . import schemas
+
+
 
 
 async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
@@ -28,7 +31,7 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
     return result.scalars().all()
 
 
-async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> schemas.LoginResponse:
+async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> TokenResponse:
     existing_user = await db.execute(
         select(User).where(User.username == user_create.username)
     )
@@ -37,8 +40,8 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
             status_code=400,
             detail=f"User already exists",
         )
-    password_hash = get_password_hash(user_create.password)
-    db_user = User(
+    password_hash: str = get_password_hash(user_create.password)
+    db_user: User = User(
         username = user_create.username,
         password_hash = password_hash,
         is_admin = user_create.is_admin,
@@ -49,8 +52,8 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
     return generate_login_response(db_user.id)
 
 
-async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> schemas.LoginResponse:
-    user = await get_user_by_username(login_data.username, db)
+async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> TokenResponse:
+    user: Optional[User] = await get_user_by_username(login_data.username, db)
 
     if(
         not user

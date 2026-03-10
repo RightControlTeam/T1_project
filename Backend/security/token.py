@@ -2,46 +2,61 @@
 
 
 from datetime import datetime, timedelta, UTC
-from core.config import settings
 from jwt import encode, decode, PyJWTError
-from user.schemas import LoginResponse
 from fastapi import HTTPException
+from pydantic import BaseModel
+
+from core.config import settings
 
 
-def generate_jwt(user_id: int) -> dict:
-    payload = {"sub": user_id}
+class JWTPayload(BaseModel):
+    sub: str
+    exp: int
 
-    exp_time_delta = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
-    exp_time = datetime.now(UTC) + exp_time_delta
-    exp_time = int(exp_time.timestamp())
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
 
-    return {
-        "jwt": encode(
-        payload,
+
+def generate_jwt(user_id: int) -> TokenResponse:
+    exp_time_delta: timedelta = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
+    exp_time: datetime = datetime.now(UTC) + exp_time_delta
+    exp_time_int: int = int(exp_time.timestamp())
+
+    payload: JWTPayload = JWTPayload(
+        sub = str(user_id),
+        exp = exp_time_int
+    )
+
+    token: str = encode(
+        payload.model_dump(),
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM
-        ),
-        "exp_time": exp_time
-    }
+    )
 
-
-def generate_login_response(user_id) -> LoginResponse:
-    jwt = generate_jwt(user_id)
-
-    return LoginResponse(
-        jwt = jwt["jwt"],
-        token_type = "bearer",
-        jwt_exp_time = jwt["exp_time"]
+    return TokenResponse(
+        access_token= token,
+        token_type= "bearer",
+        expires_in= settings.JWT_EXPIRE_MINUTES * 60
     )
 
 
-def decode_jwt(token: str) -> dict:
+def generate_login_response(user_id) -> TokenResponse:
+    jwt: TokenResponse = generate_jwt(user_id)
+
+    return jwt
+
+
+def decode_jwt(token: str) -> JWTPayload:
     try:
-        return decode(
+        payload: dict = decode(
             token,
             settings.JWT_SECRET_KEY,
-            algorithms=["HS256"]
+            algorithms=settings.JWT_ALGORITHM
         )
+        return JWTPayload(**payload)
+
     except PyJWTError as e:
         raise HTTPException(
             status_code=401,

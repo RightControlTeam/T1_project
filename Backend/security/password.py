@@ -5,8 +5,8 @@ from bcrypt import hashpw, gensalt, checkpw
 
 
 def get_password_hash(plain_password) -> str:
-    pwd_bytes = plain_password.encode("utf8")
-    salt = gensalt()
+    pwd_bytes: bytes = plain_password.encode("utf8")
+    salt: bytes = gensalt()
     return hashpw(pwd_bytes, salt).decode("utf8")
 
 
