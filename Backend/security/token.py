@@ -1,27 +1,14 @@
-#security.py
+#security/token.py
 
 
 from datetime import datetime, timedelta, UTC
 from config import settings
-from bcrypt import hashpw, gensalt, checkpw
-from jwt import encode
+from jwt import encode, decode, PyJWTError
 from user.schemas import LoginResponse
+from fastapi import HTTPException
 
 
-def get_password_hash(plain_password) -> str:
-    pwd_bytes = plain_password.encode("utf8")
-    salt = gensalt()
-    return hashpw(pwd_bytes, salt).decode("utf8")
-
-
-def verify_password(plain_password, hashed_password) -> bool:
-    return checkpw(
-        plain_password.encode('utf8'),
-        hashed_password.encode("utf8")
-    )
-
-
-def create_jwt(user_id: int) -> dict:
+def generate_jwt(user_id: int) -> dict:
     payload = {"sub": user_id}
 
     exp_time_delta = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
@@ -39,10 +26,24 @@ def create_jwt(user_id: int) -> dict:
 
 
 def generate_login_response(user_id) -> LoginResponse:
-    jwt = create_jwt(user_id)
+    jwt = generate_jwt(user_id)
 
     return LoginResponse(
         jwt = jwt["jwt"],
         token_type = "bearer",
         jwt_exp_time = jwt["exp_time"]
     )
+
+
+def decode_jwt(token: str) -> dict:
+    try:
+        return decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=["HS256"]
+        )
+    except PyJWTError as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid token: {str(e)}",
+        )

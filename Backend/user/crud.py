@@ -5,7 +5,8 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import User
-from security import get_password_hash, verify_password, generate_login_response
+from security.password import get_password_hash, verify_password
+from security.token import generate_login_response
 from typing import Optional, Sequence
 from . import schemas
 
