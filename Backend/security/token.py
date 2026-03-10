@@ -2,7 +2,7 @@
 
 
 from datetime import datetime, timedelta, UTC
-from config import settings
+from core.config import settings
 from jwt import encode, decode, PyJWTError
 from user.schemas import LoginResponse
 from fastapi import HTTPException

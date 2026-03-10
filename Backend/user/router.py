@@ -3,7 +3,7 @@
 
 from fastapi import APIRouter, Depends
 from . import schemas, crud
-from database import get_db
+from core.database import get_db
 
 
 router = APIRouter(
