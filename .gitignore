@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 env/
 venv/
+
 .pytest_cache/
 *.pyc
 *.pyo
@@ -19,7 +20,7 @@ Thumbs.db
 *~
 
 # Sensitive Information & Logs
-.env
+backend/.env
 .env.local
 .env.*.local
 *.log
