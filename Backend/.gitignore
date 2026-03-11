@@ -5,13 +5,28 @@ __pycache__/
 env/
 venv/
 .pytest_cache/
+*.pyc
+*.pyo
+*.pyd
 
 # IDE & OS Specific
 .idea/
 .vscode/
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
 
 # Sensitive Information & Logs
 .env
-*.db
+.env.local
+.env.*.local
+*.log
 log.txt
+*.db
+*.sqlite3
+
+# Docker
+*.pid
+docker-compose.override.yml
