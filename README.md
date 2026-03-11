@@ -26,6 +26,7 @@ docker-compose up -d
 
 # Применить миграции
 docker exec reserve_backend alembic upgrade head
+```
 
 ##  Схема БД
-<img width="1168" height="522" alt="image" src="https://github.com/user-attachments/assets/64fab55f-182d-40ef-afc0-6ff549c06c47" />
+<img width="1168" height="522" alt="image" src="https://github.com/user-attachments/assets/7ec36181-76ef-491b-8ea1-31557db419e8" />
