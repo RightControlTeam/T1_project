@@ -20,7 +20,7 @@ Thumbs.db
 *~
 
 # Sensitive Information & Logs
-backend/.env
+.env
 .env.local
 .env.*.local
 *.log
@@ -31,3 +31,7 @@ log.txt
 # Docker
 *.pid
 docker-compose.override.yml
+
+# Frontend (когда появится)
+frontend/node_modules/
+frontend/dist/
