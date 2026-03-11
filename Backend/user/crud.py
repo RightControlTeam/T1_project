@@ -12,8 +12,6 @@ from .models import User
 from . import schemas
 
 
-
-
 async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
@@ -66,5 +64,10 @@ async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> TokenR
         )
 
     return generate_login_response(user.id)
+
+
+async def delete_user(user: User, db: AsyncSession) -> None:
+    await db.delete(user)
+    await db.commit()
 
 

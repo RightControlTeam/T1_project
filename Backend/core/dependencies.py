@@ -1,8 +1,7 @@
 #core/dependencies.py
 
 
-from fastapi import HTTPException
-from fastapi import Depends
+from fastapi import HTTPException, Depends, Header
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 

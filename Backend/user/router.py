@@ -3,6 +3,7 @@
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import OAuth2PasswordRequestForm
 
 from . import schemas, crud
 from core.database import get_db
@@ -46,10 +47,14 @@ async def get_users(
     responses = {401: {"description": "Incorrect username or password"}}
 )
 async def verify_user(
-        login_data: schemas.UserLogin,
+        login_data: OAuth2PasswordRequestForm = Depends(),
         db: AsyncSession = Depends(get_db)
 ):
-    response = await crud.verify_user(login_data, db)
+    login_data = schemas.UserLogin(
+        username=login_data.username,
+        password=login_data.password
+    )
+    response: TokenResponse = await crud.verify_user(login_data, db)
     return response
 
 
@@ -61,3 +66,14 @@ async def get_user_profile(
     user: User = Depends(get_current_user)
 ):
     return user
+
+
+@router.delete(
+    path = "/delete/"
+)
+async def delete_user(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    await crud.delete_user(user, db)
+    return {"detail": "User deleted"}
