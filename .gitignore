@@ -20,7 +20,7 @@ Thumbs.db
 *~
 
 # Sensitive Information & Logs
-backend/.env
+.env
 .env.local
 .env.*.local
 *.log
