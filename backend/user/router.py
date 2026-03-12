@@ -11,14 +11,14 @@ from .models import User
 from core.dependencies import get_current_user, get_current_admin
 from security.token import TokenResponse
 
-router = APIRouter(
+user_router = APIRouter(
     prefix="/user",
     tags=["user"],
     responses={404: {"description": "Not found"}}
 )
 
 
-@router.post(
+@user_router.post(
     path ="/register/",
     response_model = TokenResponse
 )
@@ -30,7 +30,7 @@ async def register_user(
     return new_user
 
 
-@router.get(
+@user_router.get(
     path = "/list/",
     response_model=list[schemas.UserOut]
 )
@@ -41,7 +41,7 @@ async def get_users(
     return users
 
 
-@router.post(
+@user_router.post(
     path = "/login/",
     response_model = TokenResponse,
     responses = {401: {"description": "Incorrect username or password"}}
@@ -58,7 +58,7 @@ async def verify_user(
     return response
 
 
-@router.get(
+@user_router.get(
     path = "/profile/",
     response_model=schemas.UserOut
 )
@@ -68,7 +68,7 @@ async def get_user_profile(
     return user
 
 
-@router.delete(
+@user_router.delete(
     path = "/delete/"
 )
 async def delete_user_test(
@@ -79,7 +79,7 @@ async def delete_user_test(
     return {"detail": "User deleted"}
 
 
-@router.delete(
+@user_router.delete(
     path = "/delete-admin/"
 )
 async def delete_admin_test(
