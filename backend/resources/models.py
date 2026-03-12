@@ -1,11 +1,9 @@
 from sqlalchemy.orm import Mapped
 
 from core.database import Base
-from sqlalchemy import String, Integer, ForeignKey, Text, DateTime, Boolean
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
-from typing import Optional, List
-from datetime import datetime
+from sqlalchemy import String, Text, Boolean
+from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
 
 class Resource(Base):
     id:Mapped[int] = mapped_column(primary_key=True,index=True)

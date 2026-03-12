@@ -8,7 +8,6 @@ from . import schemas
 
 async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate)-> Resource:
     data = resource_data.model_dump()
-
     db_resource = Resource(name = data["name"],
                            type = data["type"],
                            description = data.get("description"),
@@ -18,7 +17,8 @@ async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate
     await db.commit()
     await db.refresh(db_resource)
     return db_resource
-async def get_resource(db: AsyncSession,resource_id) -> List[Resource]:
+
+async def get_resource(db: AsyncSession,resource_id:int) -> Optional[Resource]:
     result = await db.execute(
         select(Resource).where(Resource.id == resource_id)
     )
@@ -31,7 +31,7 @@ async def get_resources(db: AsyncSession,  skip: int = 0,  limit: int = 100, typ
     result = await db.execute(query)
     return result.scalars().all()
 
-async def update_resource( db: AsyncSession, resource_id: int,resource_data: schemas.ResourceUpdate)-> Resource:
+async def update_resource(db: AsyncSession,resource_id: int,resource_data: schemas.ResourceUpdate) -> Resource:
     resource = await get_resource(db,resource_id)
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Resource not found")
@@ -41,7 +41,8 @@ async def update_resource( db: AsyncSession, resource_id: int,resource_data: sch
     await db.commit()
     await db.refresh(resource)
     return resource
-async def delete_resource(db: AsyncSession, resource_id) -> None:
+
+async def delete_resource(db: AsyncSession,resource_id) -> None:
     resource = await get_resource(db,resource_id)
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Resource not found")
