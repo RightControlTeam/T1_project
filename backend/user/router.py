@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from . import schemas, crud
 from core.database import get_db
 from .models import User
-from core.dependencies import get_current_user
+from core.dependencies import get_current_user, get_current_admin
 from security.token import TokenResponse
 
 router = APIRouter(
@@ -71,8 +71,19 @@ async def get_user_profile(
 @router.delete(
     path = "/delete/"
 )
-async def delete_user(
+async def delete_user_test(
     user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    await crud.delete_user(user, db)
+    return {"detail": "User deleted"}
+
+
+@router.delete(
+    path = "/delete-admin/"
+)
+async def delete_admin_test(
+    user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     await crud.delete_user(user, db)

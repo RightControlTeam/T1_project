@@ -37,3 +37,16 @@ async def get_current_user(
         )
 
     return user
+
+
+async def get_current_admin(
+        token: str = Depends(oauth2_scheme),
+        db: AsyncSession = Depends(get_db)
+) -> User:
+    user: User = await get_current_user(token, db)
+    if not user.is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Admin privileges required."
+        )
+    return user
