@@ -7,6 +7,7 @@ from core.dependencies import get_current_user
 from user.models import User
 from . import schemas, crud
 
+
 router = APIRouter(
     prefix="/resources",
     tags=["resources"],
