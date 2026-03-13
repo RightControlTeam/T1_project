@@ -30,10 +30,8 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
 
 
 async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> TokenResponse:
-    existing_user = await db.execute(
-        select(User).where(User.username == user_create.username)
-    )
-    if existing_user.scalar_one_or_none():
+    existing_user = await get_user_by_username(user_create.username, db)
+    if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User already exists",
@@ -52,7 +50,6 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
 
 async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> TokenResponse:
     user: Optional[User] = await get_user_by_username(login_data.username, db)
-
     if(
         not user
         or user.is_deleted
@@ -62,7 +59,6 @@ async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> TokenR
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-
     return generate_login_response(user.id)
 
 
