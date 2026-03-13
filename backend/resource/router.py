@@ -9,8 +9,8 @@ from . import schemas, crud
 
 
 router = APIRouter(
-    prefix="/resources",
-    tags=["resources"],
+    prefix="/resource",
+    tags=["resource"],
     responses={404: {"description": "Not found"}}
 )
 

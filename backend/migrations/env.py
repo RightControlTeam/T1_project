@@ -13,7 +13,7 @@ from core.database import Base
 
 from user.models import User
 
-from resources.models import Resource
+from resource.models import Resource
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
