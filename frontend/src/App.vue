@@ -5,7 +5,7 @@ import { computed } from 'vue'
 const route = useRoute()
 
 // Показывать шапку только НЕ на странице входа
-const showHeader = computed(() => route.path !== '/login')
+const showHeader = computed(() => route.path !== '/login' && route.path !== '/register')
 </script>
 
 <template>
