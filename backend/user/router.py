@@ -1,7 +1,7 @@
 #user/router.py
 
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -11,16 +11,17 @@ from .models import User
 from core.dependencies import get_current_user, get_current_admin
 from security.token import TokenResponse
 
+
 user_router = APIRouter(
     prefix="/user",
     tags=["user"],
-    responses={404: {"description": "Not found"}}
 )
 
 
 @user_router.post(
     path ="/register/",
-    response_model = TokenResponse
+    response_model = TokenResponse,
+    status_code = status.HTTP_201_CREATED
 )
 async def register_user(
     user: schemas.RegisterUser,
@@ -44,7 +45,6 @@ async def get_users(
 @user_router.post(
     path = "/login/",
     response_model = TokenResponse,
-    responses = {401: {"description": "Incorrect username or password"}}
 )
 async def verify_user(
         login_data: OAuth2PasswordRequestForm = Depends(),
@@ -69,22 +69,22 @@ async def get_user_profile(
 
 
 @user_router.delete(
-    path = "/delete/"
+    path = "/delete/",
+    status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_user_test(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     await crud.delete_user(user, db)
-    return {"detail": "User deleted"}
 
 
 @user_router.delete(
-    path = "/delete-admin/"
+    path = "/delete-admin/",
+    status_code = status.HTTP_204_NO_CONTENT
 )
 async def delete_admin_test(
     user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     await crud.delete_user(user, db)
-    return {"detail": "User deleted"}

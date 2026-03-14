@@ -1,7 +1,7 @@
 #user/crud.py
 
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Sequence
@@ -30,12 +30,10 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
 
 
 async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> TokenResponse:
-    existing_user = await db.execute(
-        select(User).where(User.username == user_create.username)
-    )
-    if existing_user.scalar_one_or_none():
+    existing_user = await get_user_by_username(user_create.username, db)
+    if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_409_CONFLICT,
             detail=f"User already exists",
         )
     password_hash: str = get_password_hash(user_create.password)
@@ -52,21 +50,20 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
 
 async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> TokenResponse:
     user: Optional[User] = await get_user_by_username(login_data.username, db)
-
     if(
         not user
         or user.is_deleted
         or not verify_password(login_data.password, user.password_hash)
     ):
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-
     return generate_login_response(user.id)
 
 
 async def delete_user(user: User, db: AsyncSession) -> None:
+    # потом будет не очистка из бд, а отметка об удалении
     await db.delete(user)
     await db.commit()
 
