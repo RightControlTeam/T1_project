@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Sequence
+from fastapi.security import OAuth2PasswordRequestForm
 
 from security.password import get_password_hash, verify_password
 from security.token import generate_login_response, TokenResponse
@@ -48,7 +49,7 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
     return generate_login_response(db_user.id)
 
 
-async def verify_user(login_data: schemas.UserLogin, db: AsyncSession) -> TokenResponse:
+async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
     user: Optional[User] = await get_user_by_username(login_data.username, db)
     if(
         not user
