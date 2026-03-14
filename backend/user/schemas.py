@@ -12,7 +12,3 @@ class UserOut(BaseModel):
     username: str
     is_admin: bool
     is_deleted: bool
-
-class UserLogin(BaseModel):
-    username: str
-    password: str

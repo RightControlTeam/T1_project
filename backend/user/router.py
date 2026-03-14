@@ -50,10 +50,6 @@ async def verify_user(
         login_data: OAuth2PasswordRequestForm = Depends(),
         db: AsyncSession = Depends(get_db)
 ):
-    login_data = schemas.UserLogin(
-        username=login_data.username,
-        password=login_data.password
-    )
     response: TokenResponse = await crud.verify_user(login_data, db)
     return response
 
