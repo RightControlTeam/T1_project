@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["../../pets/sem-2-project-T1/T1_project/frontend/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}
