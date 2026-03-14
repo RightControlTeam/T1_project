@@ -8,13 +8,13 @@ from user.models import User
 from . import schemas, crud
 
 
-router = APIRouter(
+resource_router = APIRouter(
     prefix="/resource",
     tags=["resource"],
     responses={404: {"description": "Not found"}}
 )
 
-@router.post(
+@resource_router.post(
     "/",
     response_model=schemas.ResourceOut,
     status_code=status.HTTP_201_CREATED,
@@ -25,7 +25,7 @@ async def create_resource(resource_data: schemas.ResourceCreate,db: AsyncSession
     return await crud.create_resource(db, resource_data)
 
 
-@router.get(
+@resource_router.get(
     "/{resource_id}",
     response_model=schemas.ResourceOut,
 )
@@ -38,7 +38,7 @@ async def get_resource(resource_id: int, db: AsyncSession = Depends(get_db),curr
         )
     return resource
 
-@router.get(
+@resource_router.get(
     "/",
     response_model=List[schemas.ResourceOut],
 )
@@ -46,7 +46,7 @@ async def get_resources( db: AsyncSession = Depends(get_db),user: User = Depends
     return await crud.get_resources(db)
 
 
-@router.put(
+@resource_router.put(
     "/{resource_id}",
     response_model=schemas.ResourceOut,
 )
@@ -56,7 +56,7 @@ async def update_resource(resource_id:int,resource_data: schemas.ResourceUpdate,
     return await crud.update_resource(db, resource_id, resource_data)
 
 
-@router.delete(
+@resource_router.delete(
     "/{resource_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
