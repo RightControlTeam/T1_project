@@ -9,16 +9,14 @@ class RegisterUser(BaseModel):
     password: str
     is_admin: bool
 
-    @staticmethod
     @field_validator('username')
-    def validate_username(value: str):
+    def validate_username(cls, value: str):
         if not is_username_valid(value):
             raise ValueError("Username validation error")
         return value
 
-    @staticmethod
     @field_validator('password')
-    def validate_password(value: str):
+    def validate_password(cls, value: str):
         if not is_password_valid(value):
             raise ValueError("Password validation error")
         return value
