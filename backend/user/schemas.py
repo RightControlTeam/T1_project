@@ -1,19 +1,26 @@
-#user/schemas.py
+# user/schemas.py
 
-from pydantic import BaseModel, Field, field_validator
-from re import match
+from pydantic import BaseModel, field_validator
+from user.validation import is_username_valid, is_password_valid
+
 
 class RegisterUser(BaseModel):
-    username: str = Field(min_length=5, max_length=25)
-    password: str = Field(min_length=8, max_length=40)
+    username: str
+    password: str
     is_admin: bool
 
+    @staticmethod
     @field_validator('username')
-    def validate_username(cls, value: str):
-        if not match(r'^\w+$', value):
-            raise ValueError('Username can only contain letters, numbers, and underscores')
-        if match(r'^[0-9_]', value):
-            raise ValueError('Username cannot start with a digit or an underscore')
+    def validate_username(value: str):
+        if not is_username_valid(value):
+            raise ValueError("Username validation error")
+        return value
+
+    @staticmethod
+    @field_validator('password')
+    def validate_password(value: str):
+        if not is_password_valid(value):
+            raise ValueError("Password validation error")
         return value
 
 

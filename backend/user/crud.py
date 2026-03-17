@@ -1,4 +1,4 @@
-#user/crud.py
+# user/crud.py
 
 
 from fastapi import HTTPException, status
@@ -11,7 +11,7 @@ from security.password import get_password_hash, verify_password
 from security.token import generate_login_response, TokenResponse
 from .models import User
 from . import schemas
-
+from .validation import is_password_valid, is_username_valid
 
 async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.id == user_id))
@@ -39,9 +39,9 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
         )
     password_hash: str = get_password_hash(user_create.password)
     db_user: User = User(
-        username = user_create.username,
-        password_hash = password_hash,
-        is_admin = user_create.is_admin,
+        username=user_create.username,
+        password_hash=password_hash,
+        is_admin=user_create.is_admin,
     )
     db.add(db_user)
     await db.commit()
@@ -50,11 +50,22 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
 
 
 async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
+    if not is_username_valid(login_data.username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username validation error",
+        )
+    if not is_password_valid(login_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password validation error",
+        )
+
     user: Optional[User] = await get_user_by_username(login_data.username, db)
-    if(
-        not user
-        or user.is_deleted
-        or not verify_password(login_data.password, user.password_hash)
+    if (
+            not user
+            or user.is_deleted
+            or not verify_password(login_data.password, user.password_hash)
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -67,5 +78,3 @@ async def delete_user(user: User, db: AsyncSession) -> None:
     # потом будет не очистка из бд, а отметка об удалении
     await db.delete(user)
     await db.commit()
-
-
