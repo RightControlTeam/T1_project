@@ -5,7 +5,7 @@ import { useRouter, RouterLink } from 'vue-router'
 // надо еще сделать чтобы при нажатии на кнопку зарегистрироваться переходили на главную?
 
 const form = ref({
-  login: '',
+  username: '',
   password: '',
   is_admin: false
 })
@@ -34,7 +34,7 @@ async function register() {
             <form @submit.prevent="register">
                 <div class="group-input">
                     <label for="register">Логин</label>
-                    <input id="register" v-model="form.login" placeholder="Придумайте логин">
+                    <input id="register" v-model="form.username" placeholder="Придумайте логин">
                 </div>
                 <div class="group-input">
                     <label for="password">Пароль</label>
