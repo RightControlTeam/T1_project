@@ -1,9 +1,10 @@
 # user/router.py
 
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
+from .validation import is_password_valid, is_username_valid
 
 from . import schemas, crud
 from core.database import get_db
@@ -49,6 +50,16 @@ async def verify_user(
         login_data: OAuth2PasswordRequestForm = Depends(),
         db: AsyncSession = Depends(get_db)
 ):
+    if not is_username_valid(login_data.username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username validation error",
+        )
+    if not is_password_valid(login_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password validation error",
+        )
     response: TokenResponse = await crud.verify_user(login_data, db)
     return response
 

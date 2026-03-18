@@ -11,7 +11,6 @@ from security.password import get_password_hash, verify_password
 from security.token import generate_login_response, TokenResponse
 from .models import User
 from . import schemas
-from .validation import is_password_valid, is_username_valid
 
 async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.id == user_id))
@@ -50,16 +49,6 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
 
 
 async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
-    if not is_username_valid(login_data.username):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username validation error",
-        )
-    if not is_password_valid(login_data.password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password validation error",
-        )
 
     user: Optional[User] = await get_user_by_username(login_data.username, db)
     if (
