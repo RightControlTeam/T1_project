@@ -2,22 +2,27 @@
     import { ref } from 'vue'
     import api from '@/api/index'
     import { useRouter, RouterLink } from 'vue-router'
+    import qs from 'qs'     // библиотека, которая преобразует JavaScript объекты в формат application/x-www-form-urlencoded для OAuth 2.0 Password Grant
 
     const router = useRouter()
 
     const form = ref({
         username: '',
-        password: '',
-        is_admin: ''
+        password: ''
     })
 
     const error = ref('');
 
     async function login() {
         error.value = ''
+
         try {
             console.log('Отправляю')
-            const response = await api.post('/user/login', form.value)
+            const response = await api.post('/user/login', 
+                                            qs.stringify(form.value), 
+                                            {headers: 
+                                                {'Content-Type': 'application/x-www-form-urlencoded'}
+                                            })
             console.log('Данные отправлены')
             localStorage.setItem('token', response.data.access_token)
             router.push('/')
@@ -81,7 +86,7 @@
 
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
     width: 400px;
     padding: 16px;
     margin: 16px;
@@ -90,7 +95,7 @@
 
 h1 {
     text-align: center;
-    font-size: 36px;
+    font-size: 32px;
     color: white;
     font-weight: 700;
 }
