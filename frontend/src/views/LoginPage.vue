@@ -12,18 +12,11 @@
 </script>
 
 <template>
-    <div class="background-circles">
-        <div class="circle circle1"></div>
-        <div class="circle circle2"></div>
-        <div class="circle circle3"></div>
-        <div class="circle circle4"></div>
-        <div class="circle circle5"></div>
-    </div>
     <div class="login-page">
         <div class="login-card">
             <h1>Вход</h1>
             <LoginForm @success="onLogin"/>
-            <p class="to-register">Ещё нет аккаунта? <RouterLink to="/register">Зарегистрироваться</RouterLink></p> <!--Надо вставить путь до регистрации-->
+            <p class="to-register">Ещё нет аккаунта? <RouterLink to="/register">Зарегистрироваться</RouterLink></p>
         </div>
     </div>
 </template>
