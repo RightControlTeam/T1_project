@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import api from '@/api/index'
 import { useRouter, RouterLink } from 'vue-router' 
 // надо еще сделать чтобы при нажатии на кнопку зарегистрироваться переходили на главную?
+const router = useRouter()
 
 const form = ref({
   username: '',
@@ -18,6 +19,7 @@ async function register() {
     localStorage.setItem('token', response.data.access_token)
     const response2 = await api.get('/user/list/')
     console.log(response2.data)
+    router.push('/')
   }
   catch (e) {
     console.log(e)
