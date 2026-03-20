@@ -27,7 +27,7 @@
             localStorage.setItem('token', response.data.access_token)
             localStorage.setItem('is_admin', response.data.is_admin)
             console.log(response.data.is_admin)
-            router.push('/')
+            window.location.href = '/'
         } catch (e) {
             const info = e.response.data.detail[0]
             console.log(e.response)

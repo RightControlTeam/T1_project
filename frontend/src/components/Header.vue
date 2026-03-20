@@ -6,13 +6,14 @@
     const route = useRoute()
     const showHeader = computed(() => route.path !== '/login' && route.path !== '/register')
 
+    const is_admin = ref(localStorage.getItem('is_admin') === 'true')
+
+
     function logout() {
         localStorage.removeItem('token')
         localStorage.removeItem('is_admin')
-        router.push('/login')
+        window.location.href = '/login'
     }
-
-    const is_admin = ref(localStorage.getItem("is_admin") === 'true')
 
     const Items = computed(() => {
         const base = [
