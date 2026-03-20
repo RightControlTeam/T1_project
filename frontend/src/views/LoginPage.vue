@@ -94,6 +94,13 @@
 
 <template>
     <div class="login-page">
+        <div class="background-circles">
+            <div class="circle circle1"></div>
+            <div class="circle circle2"></div>
+            <div class="circle circle3"></div>
+            <div class="circle circle4"></div>
+            <div class="circle circle5"></div>
+        </div>
         <div class="login-card">
             <h1>Вход</h1>
             <form @submit.prevent="login">
@@ -237,4 +244,66 @@ a {
     font-weight: 400;
 }
 
+.circle {
+    border-radius: 50%;
+}
+
+.circle1 {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    left: -94px;
+    top: -154px;
+
+    background: linear-gradient(180deg, #53F4FF 0%, #0044B8 100%);
+    filter: blur(7.5px);
+    transform: rotate(153.5deg);
+}
+
+.circle2 {
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    left: 112.66px;
+    top: 418px;
+
+    background: linear-gradient(304.34deg, #E4D5FF 5.87%, #570FD4 94.13%);
+    filter: blur(7.5px);
+    transform: rotate(-92deg);
+}
+
+.circle3 {
+    position: absolute;
+    width: 275px;
+    height: 275px;
+    left: 835px;
+    top: 25px;
+
+    background: linear-gradient(291.08deg, #E4D5FF 8.43%, #570FD4 91.57%);
+    filter: blur(7.5px);
+    transform: rotate(-92deg);
+}
+
+.circle4 {
+    position: absolute;
+    width: 225px;
+    height: 225px;
+    left: 1086px;
+    top: -3px;
+
+    background: linear-gradient(228.4deg, #53F4FF 0.49%, #0044B8 99.51%);
+    filter: blur(7.5px);
+}
+
+.circle5 {
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    left: 880.28px;
+    top: 326.12px;
+
+    background: linear-gradient(259.37deg, #53F4FF 8.06%, #0044B8 92.09%);
+    filter: blur(7.5px);
+    transform: rotate(173.29deg);
+}
 </style>

@@ -126,7 +126,7 @@ async function register() {
 
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
     width: 400px;
     padding: 16px;
     margin: 16px;
@@ -222,8 +222,8 @@ a {
 
 .circle1 {
     position: absolute;
-    width: 482.15px;
-    height: 472.06px;
+    width: 480px;
+    height: 480px;
     left: -94px;
     top: -154px;
 
@@ -234,8 +234,8 @@ a {
 
 .circle2 {
     position: absolute;
-    width: 426.47px;
-    height: 417.45px;
+    width: 420px;
+    height: 420px;
     left: 112.66px;
     top: 418px;
 
@@ -246,8 +246,8 @@ a {
 
 .circle3 {
     position: absolute;
-    width: 280.26px;
-    height: 274.33px;
+    width: 275px;
+    height: 275px;
     left: 835px;
     top: 25px;
 
@@ -258,8 +258,8 @@ a {
 
 .circle4 {
     position: absolute;
-    width: 230px;
-    height: 219px;
+    width: 225px;
+    height: 225px;
     left: 1086px;
     top: -3px;
 
@@ -269,8 +269,8 @@ a {
 
 .circle5 {
     position: absolute;
-    width: 523px;
-    height: 488px;
+    width: 520px;
+    height: 520px;
     left: 880.28px;
     top: 326.12px;
 
