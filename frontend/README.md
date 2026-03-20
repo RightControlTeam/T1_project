@@ -30,3 +30,10 @@ src/
 4. **BookingForm** - форма бронирования
 5. **MyBookingsPage** - мои брони
 6. **NavBar** - навигация
+
+```
+#Frontend запустить
+cd frontend
+nmp install
+npm run dev
+```
