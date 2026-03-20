@@ -1,6 +1,6 @@
 <script setup>
     import { useRouter, useRoute } from 'vue-router'
-    import { computed } from 'vue'
+    import { computed, ref } from 'vue'
 
     const router = useRouter()
     const route = useRoute()
@@ -8,31 +8,28 @@
 
     function logout() {
         localStorage.removeItem('token')
+        localStorage.removeItem('is_admin')
         router.push('/login')
     }
 
-    const Items = [
-        {
-            path: '/',
-            title: 'Каталог',
-            icon: '/src/components/icons/katalog.svg'
-        },
-        {
-            path: '/bookings',
-            title: 'Мои брони',
-            icon: '/src/components/icons/calendar.svg'
-        },
-    ]
+    const is_admin = ref(localStorage.getItem("is_admin") === 'true')
 
-    let is_admin = true
-
-    if (is_admin) {
-        Items.push({
-            path: '/create_resource',
-            title: 'Создать',
-            icon: '/src/components/icons/add.svg'
-        })
-    }
+    const Items = computed(() => {
+        const base = [
+            { path: '/', title: 'Каталог', icon: '/src/components/icons/katalog.svg' },
+            { path: '/bookings', title: 'Мои брони', icon: '/src/components/icons/calendar.svg' },
+        ]
+        
+        if (is_admin.value) {
+            base.push({
+                path: '/create_resource',
+                title: 'Создать',
+                icon: '/src/components/icons/add.svg'
+            })
+        }
+        
+        return base
+    })
 
 
 </script>
