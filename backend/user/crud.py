@@ -29,7 +29,7 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
     return result.scalars().all()
 
 
-async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> TokenResponse:
+async def register_user(user_create: schemas.RegisterUser, db: AsyncSession, is_admin: bool = False) -> TokenResponse:
     existing_user = await get_user_by_username(user_create.username, db)
     if existing_user:
         raise HTTPException(
@@ -40,7 +40,7 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
     new_user: User = User(
         username=user_create.username,
         password_hash=password_hash,
-        is_admin=user_create.is_admin,
+        is_admin=is_admin,
     )
     db.add(new_user)
     await db.commit()

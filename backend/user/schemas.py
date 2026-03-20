@@ -7,7 +7,6 @@ from user.validation import is_username_valid, is_password_valid
 class RegisterUser(BaseModel):
     username: str
     password: str
-    is_admin: bool
 
     @field_validator('username')
     def validate_username(cls, value: str):
@@ -20,6 +19,11 @@ class RegisterUser(BaseModel):
         if not is_password_valid(value):
             raise ValueError("Password validation error")
         return value
+
+class RegisterAdmin(RegisterUser):
+    admin_registration_key: str
+
+
 
 
 class UserOut(BaseModel):
