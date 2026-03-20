@@ -37,15 +37,15 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession) -> 
             detail=f"User already exists",
         )
     password_hash: str = get_password_hash(user_create.password)
-    db_user: User = User(
+    new_user: User = User(
         username=user_create.username,
         password_hash=password_hash,
         is_admin=user_create.is_admin,
     )
-    db.add(db_user)
+    db.add(new_user)
     await db.commit()
-    await db.refresh(db_user)
-    return generate_login_response(db_user.id)
+    await db.refresh(new_user)
+    return generate_login_response(new_user.id, new_user.is_admin)
 
 
 async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
@@ -60,7 +60,7 @@ async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-    return generate_login_response(user.id)
+    return generate_login_response(user.id, user.is_admin)
 
 
 async def delete_user(user: User, db: AsyncSession) -> None:
