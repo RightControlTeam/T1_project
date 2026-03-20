@@ -11,24 +11,89 @@
         router.push('/login')
     }
 
+    const Items = [
+        {
+            path: '/',
+            title: 'Каталог',
+            icon: '/src/components/icons/katalog.svg'
+        },
+        {
+            path: '/bookings',
+            title: 'Мои брони',
+            icon: '/src/components/icons/calendar.svg'
+        },
+    ]
+
+    let is_admin = true
+
+    if (is_admin) {
+        Items.push({
+            path: '/create_resource',
+            title: 'Создать',
+            icon: '/src/components/icons/add.svg'
+        })
+    }
+
+
 </script>
 
 <template>
     <header v-if="showHeader">
         <nav>
-            <RouterLink to="/resources">
-                <img src="@/components/icons/katalog.svg">
-                <span>Каталог</span>
+            <RouterLink v-for="item in Items"
+                :key="item.path"
+                :to="item.path" 
+                class="menu"
+                active-class="active">
+                <img :src="item.icon">
+                <span>{{ item.title }}</span>
             </RouterLink>
-            <RouterLink to="/bookings">
-                <img src="@/components/icons/calendar.svg">
-                <span>Мои брони</span>
-            </RouterLink>
-            <button @click="logout">Выйти</button>
+            <button class="logout" @click="logout">Выйти</button>
         </nav>
     </header>
 </template>
 
-<style>
+
+<style scoped>
+    header {
+        border-bottom: 2px solid #5D20ED;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: #fff;
+        width: 100vw;
+        z-index: 1000;
+    }
+
+    nav {
+        display: flex;
+        flex-direction: row;
+        height: 80px;
+        gap: 70px;
+        margin: 0px auto;
+        justify-content: center;
+        align-items: center;
+        width: calc(100% - 200px);
+    }
+
+    .menu {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #505050
+    }
+
+    .menu.active span {
+        color: #5D20ED;
+    }
+
+    .menu.active img {
+        filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(2000%) hue-rotate(250deg);
+    }
+    .logout {
+        margin-left: auto;
+    }
     
 </style>
