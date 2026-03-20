@@ -1,12 +1,10 @@
 # Система резервирования ресурсов
 
-##О проекте
-MVP веб-сервиса для бронирования общих ресурсов (переговорки, проекторы, ноутбуки).
-
 ## Технологии
 - **Backend**: FastAPI, SQLAlchemy, PostgreSQL, JWT
 - **Frontend**: Vue 3, Vite, Pinia, Axios
 - **Infrastructure**: Docker, Docker Compose
+
 ##  Установка и запуск
 ### Запуск проекта
 ```bash
