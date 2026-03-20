@@ -58,6 +58,9 @@ async function register() {
     const response2 = await api.get('/user/list/')
     console.log(response2.data)
     router.push('/')
+    setTimeout(() => {
+        window.location.reload()
+    }, 100)
     }
     catch (e) {
         console.log(e)

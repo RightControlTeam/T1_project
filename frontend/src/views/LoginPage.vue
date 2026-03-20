@@ -66,8 +66,7 @@
 
                 localStorage.setItem('is_admin', response.data.is_admin)
                 console.log(response.data.is_admin)
-
-                router.push('/')
+                window.location.href = '/'
 
             } catch (e) {
                 if (!e.response) {
