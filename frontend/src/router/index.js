@@ -36,20 +36,26 @@ const router = createRouter({
             path: '/create_resource',
             name: 'create_resource',
             component: CreateResourcePage,
-            meta: { requires_auth: true }
+            meta: {
+                requires_auth: true,
+                admin_only: true
+            }
         }
     ]
 })
 
 router.beforeEach((to, from) => {
     const is_auth = !!localStorage.getItem('token')
+    const is_admin = !!localStorage.getItem('is_admin')
 
     if (to.meta.requires_auth && !is_auth) {
         return { name: 'login' }
     } else if (!to.meta.requires_auth && is_auth) {
         return { name: 'home' }
+    } else if (to.meta.admin_only && !is_admin) {
+        return { name: 'home' }
     }
-
+    
     return true
 })
 
