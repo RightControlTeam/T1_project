@@ -11,29 +11,46 @@ const router = createRouter({
         {
             path: '/',
             name: 'home',
-            component: ResourcesPage
+            component: ResourcesPage,
+            meta: { requires_auth: true }
         },
         {
             path: '/login',
             name: 'login',
-            component: LoginPage
+            component: LoginPage,
+            meta: { requires_auth: false }
         },
         {
             path: '/register',
             name: 'register',
-            component: Register
+            component: Register,
+            meta: { requires_auth: false }
         },
         {
             path: '/bookings',
             name: 'bookings',
-            component: BookingsPage
+            component: BookingsPage,
+            meta: { requires_auth: true }
         },
         {
             path: '/create_resource',
             name: 'create_resource',
-            component: CreateResourcePage
+            component: CreateResourcePage,
+            meta: { requires_auth: true }
         }
     ]
+})
+
+router.beforeEach((to, from) => {
+    const is_auth = !!localStorage.getItem('token')
+
+    if (to.meta.requires_auth && !is_auth) {
+        return { name: 'login' }
+    } else if (!to.meta.requires_auth && is_auth) {
+        return { name: 'home' }
+    }
+
+    return true
 })
 
 export default router

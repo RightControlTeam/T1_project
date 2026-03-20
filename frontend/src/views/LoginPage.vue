@@ -10,51 +10,112 @@
         username: '',
         password: ''
     })
+    const error = ref({
+        status: '',
+        msg: ''
+    });
+    const valid_errors = ref({
+        username: '',
+        password: ''
+    })
 
-    const error = ref('');
+    function validate_form() {
+        valid_errors.value.username = ''
+        valid_errors.value.password = ''
+        let is_valid = true
+        
+        if (!form.value.username) {
+            valid_errors.value.username = 'Логин обязателен!'
+            is_valid = false
+        } else if (!/^\w+$/.test(form.value.username)) {
+            valid_errors.value.username = "Логин может содержать только буквы, цифры и _"
+            is_valid = false
+        } else if (/^[0-9_]/.test(form.value.username)) {
+            valid_errors.value.username = "Логин не может начинаться с цифры и _"
+            is_valid = false
+        } else if (form.value.username.length < 5 || form.value.username.length > 25) {
+            valid_errors.value.username = "Длина логина должна быть от 5 до 25 символов"
+            is_valid = false
+        }
+
+        if (!form.value.password) {
+            valid_errors.value.password = "Пароль обязателен!"
+            is_valid = false
+        } else if (form.value.password.length < 8 || form.value.password.length > 40) {
+            valid_errors.value.password = "Длина пароля должна быть от 8 до 40 символов"
+            is_valid = false
+        }
+
+        return is_valid
+    }
 
     async function login() {
-        error.value = ''
+        error.value.status = ''
+        error.value.msg = ''
 
-        try {
-            console.log('Отправляю')
-            const response = await api.post('/user/login', 
-                                            qs.stringify(form.value), 
-                                            {headers: 
-                                                {'Content-Type': 'application/x-www-form-urlencoded'}
-                                            })
-            console.log('Данные отправлены')
-            localStorage.setItem('token', response.data.access_token)
-            localStorage.setItem('is_admin', response.data.is_admin)
-            console.log(response.data.is_admin)
-            window.location.href = '/'
-        } catch (e) {
-            const info = e.response.data.detail[0]
-            console.log(e.response)
-            error.value = `${e.response.status}: ${info.loc[1]} ${info.msg}`
-            // потом удалить
-            const response2 = await api.get('/user/list')
-            console.log(response2)
+        if (validate_form()) {
+            try {
+                console.log('Отправляю')
+                const response = await api.post('/user/login', 
+                                                qs.stringify(form.value), 
+                                                {headers: 
+                                                    {'Content-Type': 'application/x-www-form-urlencoded'}
+                                                })
+                console.log('Данные отправлены')
+                localStorage.setItem('token', response.data.access_token)
+
+                localStorage.setItem('is_admin', response.data.is_admin)
+                console.log(response.data.is_admin)
+                window.location.href = '/'
+
+            } catch (e) {
+                if (!e.response) {
+                    error.value.msg = 'Сервер не отвечает'
+                    console.log('response: ', e.response)
+                } else {
+                    error.value.status = e.response.status
+                    console.log(`Статус ошибки ${error.value.status}`)
+                    if (error.value.status == 401) {
+                        error.value.msg = 'Неверный логин или пароль'
+                    } else if (error.value.status === 403) {
+                        error.value.msg = 'Доступ запрещен'
+                    } else {
+                        error.value.msg = 'Произошла ошибка'
+                    }
+                    // потом удалить
+                    const response2 = await api.get('/user/list')
+                    console.log(response2)
+                }
+            }
         }
     }
 </script>
 
 <template>
     <div class="login-page">
+        <div class="background-circles">
+            <div class="circle circle1"></div>
+            <div class="circle circle2"></div>
+            <div class="circle circle3"></div>
+            <div class="circle circle4"></div>
+            <div class="circle circle5"></div>
+        </div>
         <div class="login-card">
             <h1>Вход</h1>
             <form @submit.prevent="login">
                 <div class="group-input">
                     <label for="login">Логин</label>
                     <input id="login" v-model="form.username" placeholder="Введите логин">
+                    <p v-if="valid_errors.username" class="error valid">{{ valid_errors.username }}</p>
                 </div>
                 <div class="group-input">
                     <label for="password">Пароль</label>
                     <input id="password" type="password" v-model="form.password" placeholder="Введите пароль">
+                    <p v-if="valid_errors.password" class="error valid">{{ valid_errors.password }}</p>
                 </div>
                 <div class="group-input">
                 <button type="submit">Войти</button>
-                <p v-if="error" class="error">{{ error }}</p>
+                <p v-if="error.msg" class="error">{{ error.msg }}</p>
                 </div>
             </form>
             <p class="to-register">Ещё нет аккаунта? <RouterLink to="/register">Зарегистрироваться</RouterLink></p>
@@ -165,6 +226,10 @@ button {
     font-weight: 400;
 }
 
+.error.valid {
+    text-align: left;
+}
+
 .to-register {
     font-size: 14px;
     color: white;
@@ -178,6 +243,66 @@ a {
     font-weight: 400;
 }
 
+.circle {
+    border-radius: 50%;
+}
 
+.circle1 {
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    left: -94px;
+    top: -154px;
 
+    background: linear-gradient(180deg, #53F4FF 0%, #0044B8 100%);
+    filter: blur(7.5px);
+    transform: rotate(153.5deg);
+}
+
+.circle2 {
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    left: 112.66px;
+    top: 418px;
+
+    background: linear-gradient(304.34deg, #E4D5FF 5.87%, #570FD4 94.13%);
+    filter: blur(7.5px);
+    transform: rotate(-92deg);
+}
+
+.circle3 {
+    position: absolute;
+    width: 275px;
+    height: 275px;
+    left: 835px;
+    top: 25px;
+
+    background: linear-gradient(291.08deg, #E4D5FF 8.43%, #570FD4 91.57%);
+    filter: blur(7.5px);
+    transform: rotate(-92deg);
+}
+
+.circle4 {
+    position: absolute;
+    width: 225px;
+    height: 225px;
+    left: 1086px;
+    top: -3px;
+
+    background: linear-gradient(228.4deg, #53F4FF 0.49%, #0044B8 99.51%);
+    filter: blur(7.5px);
+}
+
+.circle5 {
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    left: 880.28px;
+    top: 326.12px;
+
+    background: linear-gradient(259.37deg, #53F4FF 8.06%, #0044B8 92.09%);
+    filter: blur(7.5px);
+    transform: rotate(173.29deg);
+}
 </style>
