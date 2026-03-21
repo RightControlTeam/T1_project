@@ -60,7 +60,6 @@
         top: 0;
         background: #fff;
         width: 100vw;
-        z-index: 1000;
     }
 
     nav {
