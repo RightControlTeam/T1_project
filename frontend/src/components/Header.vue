@@ -1,7 +1,8 @@
 <script setup>
     import { useRouter, useRoute } from 'vue-router'
     import { computed, ref } from 'vue'
-
+    import calendarIcon from '@/components/icons/calendar.svg'
+    import katalogIcon from '@/components/icons/katalog.svg'
     const router = useRouter()
     const route = useRoute()
     const showHeader = computed(() => route.path !== '/login' && route.path !== '/register')
@@ -17,8 +18,8 @@
 
     const Items = computed(() => {
         const base = [
-            { path: '/', title: 'Каталог', icon: '/src/components/icons/katalog.svg' },
-            { path: '/bookings', title: 'Мои брони', icon: '/src/components/icons/calendar.svg' },
+            { path: '/', title: 'Каталог', icon: katalogIcon },
+            { path: '/bookings', title: 'Мои брони', icon: calendarIcon },
         ]
         
         if (is_admin.value) {
@@ -43,7 +44,7 @@
                 :to="item.path" 
                 class="menu"
                 active-class="active">
-                <img :src="item.icon">
+                <img :src="item.icon" :alt="item.title">
                 <span>{{ item.title }}</span>
             </RouterLink>
             <button class="logout" @click="logout">Выйти</button>
