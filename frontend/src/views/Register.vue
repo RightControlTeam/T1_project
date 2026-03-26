@@ -7,8 +7,7 @@ const router = useRouter()
 
 const form = ref({
   username: '',
-  password: '',
-  is_admin: false
+  password: ''
 })
 
 const error = ref('')
@@ -52,7 +51,7 @@ function validate_form() {
 async function register() {
   if (validate_form()) {
     try {
-    const response = await api.post('/user/register', form.value)
+    const response = await api.post('/user/register-user', form.value)
     console.log('Данные отправлены')
     localStorage.setItem('token', response.data.access_token)
     const response2 = await api.get('/user/list/')
