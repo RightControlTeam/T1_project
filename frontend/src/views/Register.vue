@@ -10,7 +10,11 @@ const form = ref({
   password: ''
 })
 
-const error = ref('')
+const error = ref({
+    status: '',
+    msg: ''
+});
+
 const valid_errors = ref({
     username: '',
     password: ''
@@ -49,6 +53,8 @@ function validate_form() {
 }
 
 async function register() {
+  error.value.msg = ""
+  error.value.status = ""
   if (validate_form()) {
     try {
     const response = await api.post('/user/register-user', form.value)
@@ -62,8 +68,19 @@ async function register() {
     }, 100)
     }
     catch (e) {
-        console.log(e)
-        error.value = e
+        if (!e.response) {
+            error.value.msg = 'Сервер не отвечает'
+            console.log('response: ', e.response)
+        } else {
+            error.value.status = e.response.status
+            console.log(e)
+            console.log(`Статус ошибки ${error.value.status}`)
+            if (error.value.status == 409) {
+                error.value.msg = 'Такой логин уже существует'
+            } else {
+                error.value.msg = 'Произошла ошибка'
+            }
+        }
     }
   }
 }
@@ -94,7 +111,7 @@ async function register() {
                 </div>
                 <div class="group-input">
                 <button type="submit">Зарегистрироваться</button>
-                <p v-if="error" class="error">{{ error }}</p>
+                <p v-if="error.msg" class="error">{{ error.msg }}</p>
                 </div>
             </form>
             <p class="to-register">Уже есть аккаунт? <RouterLink to="/login">Войти</RouterLink></p>
