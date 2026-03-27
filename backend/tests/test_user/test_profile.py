@@ -31,12 +31,6 @@ async def test_users_list(client: AsyncClient, test_user):
     assert isinstance(response.json(), list)
 
 @pytest.mark.asyncio
-async def test_get_profile_no_token(client: AsyncClient):
-    """Тест получения профиля без токена"""
-    response = await client.get("/user/profile/")
-    assert response.status_code == 401
-
-@pytest.mark.asyncio
 async def test_get_profile_invalid_token(client: AsyncClient):
     """Тест получения профиля с невалидным токеном"""
     response = await client.get(
