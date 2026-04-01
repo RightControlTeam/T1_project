@@ -32,14 +32,30 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
     return result.scalars().all()
 #endregion
 
-#region register user
-async def register_user(user_create: schemas.RegisterUser, db: AsyncSession, admin_level: int) -> TokenResponse:
+#region register
+async def register_user(
+        user_create: schemas.RegisterUser,
+        db: AsyncSession,
+        admin_level: int
+) -> TokenResponse:
     existing_user = await get_user_by_username(user_create.username, db)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User already exists",
         )
+
+    if admin_level == AdminLevel.creator:
+        find_creator = await db.execute(
+            select(User).where(User.admin_level == AdminLevel.creator)
+        )
+        if find_creator.first() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Creator already exists",
+            )
+
+
     password_hash: str = get_password_hash(user_create.password)
     new_user: User = User(
         username=user_create.username,
@@ -51,19 +67,10 @@ async def register_user(user_create: schemas.RegisterUser, db: AsyncSession, adm
     await db.refresh(new_user)
     return generate_login_response(new_user.id, new_user.admin_level)
 
-
-async def register_creator(user_create: schemas.RegisterUser, db: AsyncSession) -> TokenResponse:
-    find_creator = await db.execute(
-        select(User).where(User.admin_level == AdminLevel.CREATOR)
-    )
-    if find_creator.first() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Creator already exists",
-        )
-    return await register_user(user_create, db, 2)
 #endregion
 
+
+#region misc
 async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
     user: Optional[User] = await get_user_by_username(login_data.username, db)
     if (
@@ -82,3 +89,4 @@ async def delete_user(user: User, db: AsyncSession) -> None:
     # потом будет не очистка из бд, а отметка об удалении
     await db.delete(user)
     await db.commit()
+#endregion

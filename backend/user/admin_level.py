@@ -2,6 +2,6 @@ from enum import IntEnum
 
 
 class AdminLevel(IntEnum):
-    NONE = 0
-    ADMIN = 1
-    CREATOR = 2
+    user = 0
+    admin = 1
+    creator = 2
