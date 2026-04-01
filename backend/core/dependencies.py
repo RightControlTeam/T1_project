@@ -30,7 +30,7 @@ async def get_current_user(
             detail = "User not found."
         )
 
-    if user.is_deleted:
+    if not user.is_active:
         raise HTTPException(
             status_code = 401,
             detail = "User is deleted."
@@ -48,5 +48,18 @@ async def get_current_admin(
         raise HTTPException(
             status_code=403,
             detail="Access denied. Admin privileges required."
+        )
+    return user
+
+
+async def get_current_creator(
+        token: str = Depends(oauth2_scheme),
+        db: AsyncSession = Depends(get_db)
+) -> User:
+    user: User = await get_current_user(token, db)
+    if not user.is_creator:
+        raise HTTPException(
+            status_code=403,
+            detail="Access denied. Creator privileges required."
         )
     return user

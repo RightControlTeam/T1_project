@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     JWT_EXPIRE_MINUTES: int
 
-    ADMIN_REGISTRATION_KEY: str
+    CREATOR_REGISTRATION_KEY: str
 
     @computed_field
     @property

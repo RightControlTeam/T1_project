@@ -12,6 +12,7 @@ from .models import User
 from core.dependencies import get_current_user, get_current_admin
 from security.token import TokenResponse
 from core.config import settings
+from .admin_level import AdminLevel
 
 user_router = APIRouter(
     prefix="/user",
@@ -33,21 +34,22 @@ async def register_user(
 
 
 @user_router.post(
-    path="/register-admin/",
+    path="/register-creator/",
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED
 )
-async def register_user(
+async def register_creator(
         user: schemas.RegisterAdmin,
         db=Depends(get_db)
 ):
-    if user.admin_registration_key != settings.ADMIN_REGISTRATION_KEY:
+    if user.admin_registration_key != settings.CREATOR_REGISTRATION_KEY:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin registration key is incorrect"
+            detail="Creator registration key is incorrect"
         )
-    new_user: TokenResponse = await crud.register_user(user, db, True)
+    new_user: TokenResponse = await crud.register_creator(user, db)
     return new_user
+
 
 
 

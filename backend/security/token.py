@@ -17,10 +17,10 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     expires_in: int
-    is_admin: bool
+    admin_level: int
 
 
-def generate_login_response(user_id: int, is_admin: bool) -> TokenResponse:
+def generate_login_response(user_id: int, admin_level: int) -> TokenResponse:
     exp_time_delta: timedelta = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     exp_time: datetime = datetime.now(UTC) + exp_time_delta
     exp_time_int: int = int(exp_time.timestamp())
@@ -38,9 +38,9 @@ def generate_login_response(user_id: int, is_admin: bool) -> TokenResponse:
 
     return TokenResponse(
         access_token= token,
-        token_type= "Bearer",
-        expires_in= settings.JWT_EXPIRE_MINUTES * 60,
-        is_admin=is_admin
+        token_type = "Bearer",
+        expires_in = settings.JWT_EXPIRE_MINUTES * 60,
+        admin_level = admin_level
     )
 
 
