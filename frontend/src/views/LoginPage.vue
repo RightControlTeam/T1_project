@@ -64,9 +64,14 @@
                 console.log('Данные отправлены')
                 localStorage.setItem('token', response.data.access_token)
 
-                localStorage.setItem('is_admin', response.data.is_admin)
-                console.log(response.data.is_admin)
-                window.location.href = '/'
+                localStorage.setItem('admin_level', response.data.admin_level)
+                console.log(response.data)
+                if (response.data.admin_level === '2') {
+                    window.location.href = '/admin_list'
+                }
+                else {
+                    window.location.href = '/'
+                }
 
             } catch (e) {
                 if (!e.response) {
@@ -82,9 +87,6 @@
                     } else {
                         error.value.msg = 'Произошла ошибка'
                     }
-                    // потом удалить
-                    const response2 = await api.get('/user/list')
-                    console.log(response2)
                 }
             }
         }
