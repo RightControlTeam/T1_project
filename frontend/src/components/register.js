@@ -36,24 +36,17 @@ export function validate_form(form, valid_errors) {
 
 
 export async function register(validate_form, path, form, error, valid_errors) {
-  console.log('Аргументы:', { validate_form, path, form, error, valid_errors })
-
-  console.log('=== register.js ===')
-  console.log('validate_form:', typeof validate_form)
-  console.log('path:', path)
-  console.log('form:', form)
-  console.log('error:', error)
-  console.log('error:', valid_errors)
-  console.log('valid_errors:', valid_errors.value.username, valid_errors.value.password)
-  console.log('error?.value:', error.value.msg, error.value.status)
   error.value.msg = ""
   error.value.status = ""
   if (validate_form(form, valid_errors)) {
     try {
         const response = await api.post(path, form.value)
         console.log('Данные отправлены')
-        localStorage.setItem('token', response.data.access_token)
-        localStorage.setItem('admin_level', response.data.admin_level)
+        const isCreatingAdmin = path === '/user/register-admin'
+        if (!isCreatingAdmin) {
+            localStorage.setItem('token', response.data.access_token)
+            localStorage.setItem('admin_level', response.data.admin_level)
+        }
         console.log(response.data)
         form.value.username = ''
         form.value.password = ''
