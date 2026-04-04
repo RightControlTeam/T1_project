@@ -1,14 +1,13 @@
 <script setup>
 import { ref } from 'vue'
-import api from '@/api/index'
 import { useRouter, RouterLink } from 'vue-router' 
+import { register, validate_form } from '@/components/register.js'
 
-const router = useRouter()
 
 const form = ref({
   username: '',
   password: ''
-})
+});
 
 const error = ref({
     status: '',
@@ -18,68 +17,10 @@ const error = ref({
 const valid_errors = ref({
     username: '',
     password: ''
-})
+});
 
-function validate_form() {
-    valid_errors.value.username = ""
-    valid_errors.value.password = ""
-    let is_valid = true
-    if (!form.value.username) {
-        valid_errors.value.username = "Логин обязателен!"
-        is_valid = false
-    }
-    else if (form.value.username.length < 5 || form.value.username.length > 25) {
-        valid_errors.value.username = "Длина логина должна быть от 5 до 25 символов!"
-        is_valid = false
-    }
-    else if (!/^\w+$/.test(form.value.username)) {
-        valid_errors.value.username = "Логин может содержать только буквы, цифры и нижнее подчёркивание"
-        is_valid = false
-    }
-    else if (/^[0-9_]/.test(form.value.username)) {
-        valid_errors.value.username = "Логин не может начинаться с цифры или нижнего подчёркивания"
-        is_valid = false
-    }
-
-    if (!form.value.password) {
-        valid_errors.value.password = "Пароль обязателен!"
-        is_valid = false
-    }
-    else if (form.value.password.length < 8 || form.value.password.length > 40) {
-        valid_errors.value.password = "Длина пароля должна быть от 8 до 40 символов"
-        is_valid = false
-    }
-    return is_valid
-}
-
-async function register() {
-  error.value.msg = ""
-  error.value.status = ""
-  if (validate_form()) {
-    try {
-    const response = await api.post('/user/register-user', form.value)
-    console.log('Данные отправлены')
-    localStorage.setItem('token', response.data.access_token)
-    localStorage.setItem('admin_level', response.data.admin_level)
-    console.log(response.data)
-    router.push('/')
-    }
-    catch (e) {
-        if (!e.response) {
-            error.value.msg = 'Сервер не отвечает'
-            console.log('response: ', e.response)
-        } else {
-            error.value.status = e.response.status
-            console.log(e)
-            console.log(`Статус ошибки ${error.value.status}`)
-            if (error.value.status == 409) {
-                error.value.msg = 'Такой логин уже существует'
-            } else {
-                error.value.msg = 'Произошла ошибка'
-            }
-        }
-    }
-  }
+const handleRegister = () => {
+  register(validate_form, '/user/register-user', form, error, valid_errors)
 }
 
 </script>
@@ -95,7 +36,7 @@ async function register() {
         </div>
         <div class="register-card">
             <h1>Регистрация</h1>
-            <form @submit.prevent="register">
+            <form @submit.prevent="handleRegister">
                 <div class="group-input">
                     <label for="register">Логин</label>
                     <input id="register" v-model="form.username" placeholder="Придумайте логин">

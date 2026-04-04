@@ -2,6 +2,7 @@
     import { ref } from 'vue'
     import api from '@/api/index'
     import { useRouter, RouterLink } from 'vue-router'
+    import {  register } from '@/components/register.js'
     import qs from 'qs'     // библиотека, которая преобразует JavaScript объекты в формат application/x-www-form-urlencoded для OAuth 2.0 Password Grant
 
     const router = useRouter()
@@ -66,7 +67,7 @@
 
                 localStorage.setItem('admin_level', response.data.admin_level)
                 console.log(response.data)
-                if (response.data.admin_level === '2') {
+                if (response.data.admin_level === 2) {
                     window.location.href = '/admin_list'
                 }
                 else {
