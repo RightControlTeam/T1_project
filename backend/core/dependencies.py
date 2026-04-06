@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db
 from security.token import decode_jwt, JWTPayload
-from user.crud import get_user_by_id
 from user.models import User
 
 
@@ -22,7 +21,7 @@ async def get_current_user(
     payload: JWTPayload = decode_jwt(token)
     user_id: int = int(payload.sub)
 
-    user: User = await get_user_by_id(user_id, db)
+    user: User | None = await db.get(User, user_id)
 
     if user is None:
         raise HTTPException(
