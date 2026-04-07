@@ -7,6 +7,7 @@ from uvicorn import run
 
 from user.router import user_router
 from resource.router import resource_router
+from booking.router import booking_router
 
 
 app: FastAPI = FastAPI()
@@ -23,6 +24,7 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(resource_router)
+app.include_router(booking_router)
 
 
 if __name__ == "__main__":

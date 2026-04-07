@@ -1,8 +1,8 @@
-"""create_resources_table
+"""initial
 
-Revision ID: c1b22390801c
-Revises: 2b2dde58c845
-Create Date: 2026-03-12 18:00:53.168191
+Revision ID: 2ea569206162
+Revises: 
+Create Date: 2026-04-07 14:08:37.352410
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c1b22390801c'
-down_revision: Union[str, Sequence[str], None] = '632d371169a1'
+revision: str = '2ea569206162'
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
