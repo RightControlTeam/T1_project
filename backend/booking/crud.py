@@ -2,9 +2,11 @@ from fastapi import HTTPException, status
 from typing import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_
+
 
 from .models import Booking
+from resource.models import Resource
 from .schemas import BookingCreate
 
 async def create_booking(
@@ -12,6 +14,16 @@ async def create_booking(
         user_id: int,
         db: AsyncSession
 ) -> Booking:
+
+    existing_resource = await db.scalar(
+        select(Resource).where(Resource.id == new_booking.resource_id)
+    )
+    if existing_resource is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resource not found"
+        )
+
     overlap = await db.scalar(
         select(Booking).where(
             and_(
