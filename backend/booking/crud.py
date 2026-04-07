@@ -1,7 +1,8 @@
+from fastapi import HTTPException, status
 from typing import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_, or_
 
 from .models import Booking
 from .schemas import BookingCreate
@@ -11,6 +12,24 @@ async def create_booking(
         user_id: int,
         db: AsyncSession
 ) -> Booking:
+    overlap = await db.scalar(
+        select(Booking).where(
+            and_(
+                Booking.resource_id == new_booking.resource_id
+                ,
+                Booking.start_time <= new_booking.end_time
+                ,
+                Booking.end_time >= new_booking.start_time
+            )
+        )
+    )
+
+    if overlap is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Booking time overlaps with existing booking(s) for this resource",
+        )
+
     booking_data = new_booking.model_dump()
     booking_data["user_id"] = user_id
     booking = Booking(**booking_data)
