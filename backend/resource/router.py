@@ -25,6 +25,27 @@ async def create_resource(resource_data: schemas.ResourceCreate,db: AsyncSession
     return await crud.create_resource(db, resource_data)
 
 
+@resource_router.post(
+    "/{resource_id}/schedule",
+    response_model=schemas.ResourceScheduleOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_resource_schedule(
+        resource_id: int,
+        schedule_data: schemas.ResourceScheduleCreate,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can do this")
+
+    resource = await crud.get_resource(db, resource_id)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    return await crud.create_resource_schedule(db, resource_id, schedule_data)
+
+
 @resource_router.get(
     "/{resource_id}",
     response_model=schemas.ResourceOut,
@@ -42,8 +63,14 @@ async def get_resource(resource_id: int, db: AsyncSession = Depends(get_db),curr
     "/",
     response_model=List[schemas.ResourceOut],
 )
-async def get_resources( db: AsyncSession = Depends(get_db),user: User = Depends(get_current_user))-> List[schemas.ResourceOut]:
-    return await crud.get_resources(db)
+
+async def get_resources(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+) -> List[schemas.ResourceOut]:
+    return await crud.get_resources(db, skip=skip, limit=limit)
 
 
 @resource_router.put(
