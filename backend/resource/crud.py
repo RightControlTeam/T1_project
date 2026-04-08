@@ -2,8 +2,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from fastapi import HTTPException, status
+from sqlalchemy.orm import selectinload
 
-from .models import Resource
+from .models import Resource, ResourceSchedule
 from . import schemas
 
 async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate)-> Resource:
@@ -18,11 +19,11 @@ async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate
     await db.refresh(db_resource)
     return db_resource
 
-async def get_resource(db: AsyncSession,resource_id:int) -> Optional[Resource]:
-    result = await db.execute(
-        select(Resource).where(Resource.id == resource_id)
-    )
-    return result.scalar_one_or_none()
+# async def get_resource(db: AsyncSession,resource_id:int) -> Optional[Resource]:
+#     result = await db.execute(
+#         select(Resource).where(Resource.id == resource_id)
+#     )
+#     return result.scalar_one_or_none()
 async def get_resources(db: AsyncSession,  skip: int = 0,  limit: int = 100, type: Optional[str] = None) -> List[Resource]:
     query = select(Resource)
     if type:
@@ -49,3 +50,27 @@ async def delete_resource(db: AsyncSession,resource_id) -> None:
     await db.delete(resource)
     await db.commit()
 
+async def create_resource_schedule(
+        db: AsyncSession,
+        resource_id: int,
+        schedule_data: schemas.ResourceScheduleCreate
+) -> ResourceSchedule:
+
+    db_schedule = ResourceSchedule(
+        resource_id=resource_id,
+        day_of_week=schedule_data.day_of_week,
+        start_time=schedule_data.start_time,
+        end_time=schedule_data.end_time
+    )
+    db.add(db_schedule)
+    await db.commit()
+    await db.refresh(db_schedule)
+    return db_schedule
+
+async def get_resource(db: AsyncSession, resource_id: int) -> Optional[Resource]:
+    result = await db.execute(
+        select(Resource)
+        .options(selectinload(Resource.schedules))
+        .where(Resource.id == resource_id)
+    )
+    return result.scalar_one_or_none()
