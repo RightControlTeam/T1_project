@@ -29,5 +29,5 @@ class RegisterAdmin(RegisterUser):
 class UserOut(BaseModel):
     id: int
     username: str
-    is_admin: bool
-    is_deleted: bool
+    admin_level: int
+    is_active: bool

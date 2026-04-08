@@ -11,7 +11,10 @@ from security.password import get_password_hash, verify_password
 from security.token import generate_login_response, TokenResponse
 from .models import User
 from . import schemas
+from .admin_level import AdminLevel
 
+
+#region get user/users
 async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
@@ -27,43 +30,63 @@ async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
         select(User).offset(skip).limit(limit)
     )
     return result.scalars().all()
+#endregion
 
-
-async def register_user(user_create: schemas.RegisterUser, db: AsyncSession, is_admin: bool = False) -> TokenResponse:
+#region register
+async def register_user(
+        user_create: schemas.RegisterUser,
+        db: AsyncSession,
+        admin_level: int
+) -> TokenResponse:
     existing_user = await get_user_by_username(user_create.username, db)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User already exists",
         )
+
+    if admin_level == AdminLevel.creator:
+        find_creator = await db.execute(
+            select(User).where(User.admin_level == AdminLevel.creator)
+        )
+        if find_creator.first() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Creator already exists",
+            )
+
+
     password_hash: str = get_password_hash(user_create.password)
     new_user: User = User(
         username=user_create.username,
         password_hash=password_hash,
-        is_admin=is_admin,
+        admin_level= admin_level
     )
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
-    return generate_login_response(new_user.id, new_user.is_admin)
+    return generate_login_response(new_user.id, new_user.admin_level)
+
+#endregion
 
 
+#region misc
 async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
-
     user: Optional[User] = await get_user_by_username(login_data.username, db)
     if (
             not user
-            or user.is_deleted
+            or not user.is_active
             or not verify_password(login_data.password, user.password_hash)
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-    return generate_login_response(user.id, user.is_admin)
+    return generate_login_response(user.id, user.admin_level)
 
 
 async def delete_user(user: User, db: AsyncSession) -> None:
     # потом будет не очистка из бд, а отметка об удалении
     await db.delete(user)
     await db.commit()
+#endregion

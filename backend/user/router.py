@@ -9,9 +9,10 @@ from .validation import is_password_valid, is_username_valid
 from . import schemas, crud
 from core.database import get_db
 from .models import User
-from core.dependencies import get_current_user, get_current_admin
+from core.dependencies import get_current_user, get_current_admin, get_current_creator
 from security.token import TokenResponse
 from core.config import settings
+from .admin_level import AdminLevel
 
 user_router = APIRouter(
     prefix="/user",
@@ -28,7 +29,20 @@ async def register_user(
         user: schemas.RegisterUser,
         db=Depends(get_db)
 ):
-    new_user: TokenResponse = await crud.register_user(user, db)
+    new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.user)
+    return new_user
+
+
+@user_router.post(
+    path="/register-user/",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def register_user(
+        user: schemas.RegisterUser,
+        db=Depends(get_db)
+):
+    new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.user)
     return new_user
 
 
@@ -37,17 +51,31 @@ async def register_user(
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED
 )
-async def register_user(
+async def register_admin(
+        user: schemas.RegisterUser,
+        db=Depends(get_db),
+        _creator: User = Depends(get_current_creator)
+):
+    new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.admin)
+    return new_user
+
+@user_router.post(
+    path="/register-creator/",
+    response_model=TokenResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def register_creator(
         user: schemas.RegisterAdmin,
         db=Depends(get_db)
 ):
-    if user.admin_registration_key != settings.ADMIN_REGISTRATION_KEY:
+    if user.admin_registration_key != settings.CREATOR_REGISTRATION_KEY:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin registration key is incorrect"
+            detail="Creator registration key is incorrect"
         )
-    new_user: TokenResponse = await crud.register_user(user, db, True)
+    new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.creator)
     return new_user
+
 
 
 

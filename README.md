@@ -14,6 +14,7 @@ cd T1_project
 
 # Создать .env как в примере
 cp backend/.env.example backend/.env
+#copy backend\.env.example backend\.env
 
 # Запустить через Docker
 docker-compose up -d

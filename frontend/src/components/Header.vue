@@ -7,22 +7,28 @@
     const route = useRoute()
     const showHeader = computed(() => route.path !== '/login' && route.path !== '/register')
 
-    const is_admin = ref(localStorage.getItem('is_admin') === 'true')
+    const admin_level = ref(localStorage.getItem('admin_level'))
 
 
     function logout() {
         localStorage.removeItem('token')
-        localStorage.removeItem('is_admin')
+        localStorage.removeItem('admin_level')
         window.location.href = '/login'
     }
 
     const Items = computed(() => {
+        if (admin_level.value === '2') {
+            return [
+                { path: '/create_admin', title: 'Создать админа', icon: '/src/components/icons/add.svg' },
+                { path: '/admin_list', title: 'Список админов', icon: '/src/components/icons/katalog.svg' }
+            ]
+        }
         const base = [
             { path: '/', title: 'Каталог', icon: katalogIcon },
             { path: '/bookings', title: 'Мои брони', icon: calendarIcon },
         ]
         
-        if (is_admin.value) {
+        if (admin_level.value === '1') {
             base.push({
                 path: '/create_resource',
                 title: 'Создать',
