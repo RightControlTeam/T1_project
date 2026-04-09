@@ -1,5 +1,6 @@
 from pydantic import BaseModel, field_validator
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
+
 
 class BookingCreate(BaseModel):
     resource_id: int
@@ -15,16 +16,16 @@ class BookingCreate(BaseModel):
         return value
 
     @field_validator('end_time')
-    def check_times(cls, value, info):
+    def check_end_time(cls, value, info):
         if value.tzinfo is None:
             value = value.replace(tzinfo=UTC)
         start = info.data.get('start_time')
         if start:
             if value <= start:
-                raise ValueError('Время окончания должно быть позже времени начала')
-            duration = value - start
-            if duration.total_seconds() > 12 * 3600:
-                raise ValueError('Максимальное время бронирования 12 часов')
+                raise ValueError('End time should be after start time')
+            duration: timedelta = value - start
+            if duration > timedelta(hours=12):
+                raise ValueError('Maximum booking time length is 12 hours')
         return value
 
 
