@@ -162,12 +162,29 @@ async def create_booking(
 
 @booking_router.get("/", response_model=Sequence[BookingOut])
 async def get_bookings(
-    db: AsyncSession = Depends(get_db),
     user_id: Optional[int] = Query(None),
-    resource_id: Optional[int] = Query(None)
+    resource_id: Optional[int] = Query(None),
+    db: AsyncSession = Depends(get_db)
 ):
     return await crud.get_bookings(db, user_id, resource_id)
 
 
+@booking_router.put("/{booking_id}", response_model=BookingOut)
+async def update_booking(
+    booking_id: int,
+    edited_booking: BookingCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    return await crud.update_booking(edited_booking, booking_id, user.id, db)
+
+
+@booking_router.delete("/{booking_id}", response_model=BookingOut)
+async def cancel_booking(
+    booking_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    return await crud.cancel_booking(booking_id, user.id, db)
 
 

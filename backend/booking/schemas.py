@@ -29,11 +29,14 @@ class BookingCreate(BaseModel):
 
 
 class BookingOut(BaseModel):
+    # fields
     id: int
     user_id: int
     resource_id: int
     start_time: datetime
     end_time: datetime
+
+    # properties
     is_cancelled: bool
     is_pending: bool
     is_active: bool

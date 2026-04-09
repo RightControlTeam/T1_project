@@ -9,14 +9,40 @@ from .models import Booking
 from resource.models import Resource
 from .schemas import BookingCreate
 
-async def create_booking(
-        new_booking: BookingCreate,
-        user_id: int,
-        db: AsyncSession
-) -> Booking:
+#need to check and exclude cancelled bookings in overlaps
 
+async def check_time_overlap(
+        booking: BookingCreate,
+        db: AsyncSession,
+        filter_id: int | None = None
+) -> None:
+    query = select(Booking).where(
+            and_(
+                Booking.resource_id ==booking.resource_id
+                ,
+                Booking.start_time <= booking.end_time
+                ,
+                Booking.end_time >= booking.start_time
+            )
+        )
+    if filter_id is not None:
+        query = query.where(Booking.id != filter_id)
+
+    result = await db.scalar(query)
+
+    if result is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Booking time overlaps with existing booking(s) for this resource",
+        )
+
+
+async def check_existing_resource(
+        booking: BookingCreate,
+        db: AsyncSession,
+) -> None:
     existing_resource = await db.scalar(
-        select(Resource).where(Resource.id == new_booking.resource_id)
+        select(Resource).where(Resource.id == booking.resource_id)
     )
     if existing_resource is None:
         raise HTTPException(
@@ -24,23 +50,30 @@ async def create_booking(
             detail="Resource not found"
         )
 
-    overlap = await db.scalar(
-        select(Booking).where(
-            and_(
-                Booking.resource_id == new_booking.resource_id
-                ,
-                Booking.start_time <= new_booking.end_time
-                ,
-                Booking.end_time >= new_booking.start_time
-            )
-        )
-    )
 
-    if overlap is not None:
+async def find_existing_booking(
+        booking_id: int,
+        db: AsyncSession,
+) -> Booking:
+    existing_booking = await db.scalar(
+        select(Booking).where(Booking.id == booking_id)
+    )
+    if existing_booking is None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Booking time overlaps with existing booking(s) for this resource",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Booking not found"
         )
+    return existing_booking
+
+
+async def create_booking(
+        new_booking: BookingCreate,
+        user_id: int,
+        db: AsyncSession
+) -> Booking:
+
+    await check_existing_resource(new_booking, db)
+    await check_time_overlap(new_booking, db)
 
     booking_data = new_booking.model_dump()
     booking_data["user_id"] = user_id
@@ -70,3 +103,47 @@ async def get_bookings(
     return result.scalars().all()
 
 
+async def update_booking(
+        updated_booking: BookingCreate,
+        booking_id: int,
+        user_id: int,
+        db: AsyncSession
+) -> Booking:
+    await check_existing_resource(updated_booking, db)
+    await check_time_overlap(updated_booking, db, booking_id)
+    existing_booking = await find_existing_booking(booking_id, db)
+
+    if user_id != existing_booking.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to edit this booking"
+        )
+
+    existing_booking.start_time = updated_booking.start_time
+    existing_booking.end_time = updated_booking.end_time
+    existing_booking.resource_id = updated_booking.resource_id
+
+    await db.commit()
+    await db.refresh(existing_booking)
+    return existing_booking
+
+
+
+async def cancel_booking(
+        booking_id: int,
+        user_id: int,
+        db: AsyncSession,
+) -> Booking:
+    existing_booking = await find_existing_booking(booking_id, db)
+
+    if user_id != existing_booking.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to cancel this booking"
+        )
+
+    existing_booking.is_cancelled = True
+
+    await db.commit()
+    await db.refresh(existing_booking)
+    return existing_booking
