@@ -9,8 +9,6 @@ from .models import Booking
 from resource.models import Resource
 from .schemas import BookingCreate
 
-#need to check and exclude cancelled bookings in overlaps
-
 async def check_time_overlap(
         booking: BookingCreate,
         db: AsyncSession,
@@ -18,11 +16,13 @@ async def check_time_overlap(
 ) -> None:
     query = select(Booking).where(
             and_(
-                Booking.resource_id ==booking.resource_id
+                Booking.resource_id == booking.resource_id
                 ,
-                Booking.start_time <= booking.end_time
+                Booking.start_time < booking.end_time
                 ,
-                Booking.end_time >= booking.start_time
+                Booking.end_time > booking.start_time
+                ,
+                Booking.is_cancelled == False
             )
         )
     if filter_id is not None:
