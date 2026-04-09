@@ -136,7 +136,7 @@ async def update_booking(
     return booking'''
 from typing import Sequence, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from booking.schemas import BookingOut, BookingCreate
@@ -151,7 +151,11 @@ booking_router = APIRouter(
     tags=["booking"]
 )
 
-@booking_router.post("/", response_model=BookingOut)
+@booking_router.post(
+    "/",
+    response_model=BookingOut,
+    status_code=status.HTTP_201_CREATED
+)
 async def create_booking(
     new_booking: BookingCreate,
     user: User = Depends(get_current_user),
@@ -179,12 +183,15 @@ async def update_booking(
     return await crud.update_booking(edited_booking, booking_id, user.id, db)
 
 
-@booking_router.delete("/{booking_id}", response_model=BookingOut)
+@booking_router.delete(
+    "/{booking_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
 async def cancel_booking(
     booking_id: int,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-):
-    return await crud.cancel_booking(booking_id, user.id, db)
+) -> None:
+    await crud.cancel_booking(booking_id, user.id, db)
 
 

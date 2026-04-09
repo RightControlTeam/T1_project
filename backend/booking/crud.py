@@ -133,7 +133,7 @@ async def cancel_booking(
         booking_id: int,
         user_id: int,
         db: AsyncSession,
-) -> Booking:
+) -> None:
     existing_booking = await find_existing_booking(booking_id, db)
 
     if user_id != existing_booking.user_id:
@@ -143,7 +143,4 @@ async def cancel_booking(
         )
 
     existing_booking.is_cancelled = True
-
     await db.commit()
-    await db.refresh(existing_booking)
-    return existing_booking
