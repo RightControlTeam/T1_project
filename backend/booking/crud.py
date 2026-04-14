@@ -50,14 +50,19 @@ async def check_existing_resource(
             detail="Resource not found"
         )
 
+async def get_booking_by_id(
+        booking_id: int,
+        db: AsyncSession
+):
+    return await db.scalar(
+        select(Booking).where(Booking.id == booking_id)
+    )
 
 async def find_existing_booking(
         booking_id: int,
         db: AsyncSession,
 ) -> Booking:
-    existing_booking = await db.scalar(
-        select(Booking).where(Booking.id == booking_id)
-    )
+    existing_booking = await get_booking_by_id(booking_id, db)
     if existing_booking is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
