@@ -38,6 +38,9 @@ export function validate_form(form, valid_errors) {
 export async function register(validate_form, path, form, error, valid_errors) {
   error.value.msg = ""
   error.value.status = ""
+
+  const normalizedPath = path.endsWith('/') ? path : `${path}/`;
+
   if (validate_form(form, valid_errors)) {
     try {
         const response = await api.post(path, form.value)
