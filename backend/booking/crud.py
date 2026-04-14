@@ -4,10 +4,11 @@ from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-
+from resource.models import ResourceSchedule, Resource
 from .models import Booking
-from resource.models import Resource
 from .schemas import BookingCreate
+
+# region Checks
 
 async def check_time_overlap(
         booking: BookingCreate,
@@ -50,15 +51,30 @@ async def check_existing_resource(
             detail="Resource not found"
         )
 
-async def get_booking_by_id(
-        booking_id: int,
-        db: AsyncSession
-):
-    return await db.scalar(
-        select(Booking).where(Booking.id == booking_id)
-    )
 
-async def find_existing_booking(
+async def check_schedule(
+        booking: BookingCreate,
+        db: AsyncSession,
+) -> None:
+    week_day: int = booking.start_time.weekday()
+    match_range = await db.scalar(
+        select(ResourceSchedule).where(
+            and_(
+                ResourceSchedule.resource_id == booking.resource_id,
+                ResourceSchedule.start_time <= booking.start_time.time(),
+                ResourceSchedule.end_time >= booking.end_time.time(),
+                ResourceSchedule.day_of_week == week_day
+            )
+        )
+    )
+    if match_range is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Booking time range does not match schedule"
+        )
+
+
+async def check_and_find_existing_booking(
         booking_id: int,
         db: AsyncSession,
 ) -> Booking:
@@ -69,6 +85,17 @@ async def find_existing_booking(
             detail="Booking not found"
         )
     return existing_booking
+# endregion
+
+# region Crud
+
+async def get_booking_by_id(
+        booking_id: int,
+        db: AsyncSession
+):
+    return await db.scalar(
+        select(Booking).where(Booking.id == booking_id)
+    )
 
 
 async def create_booking(
@@ -78,6 +105,7 @@ async def create_booking(
 ) -> Booking:
 
     await check_existing_resource(new_booking, db)
+    await check_schedule(new_booking, db)
     await check_time_overlap(new_booking, db)
 
     booking_data = new_booking.model_dump()
@@ -115,8 +143,15 @@ async def update_booking(
         db: AsyncSession
 ) -> Booking:
     await check_existing_resource(updated_booking, db)
+    await check_schedule(updated_booking, db)
     await check_time_overlap(updated_booking, db, booking_id)
-    existing_booking = await find_existing_booking(booking_id, db)
+    existing_booking = await check_and_find_existing_booking(booking_id, db)
+
+    if existing_booking.is_cancelled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update a cancelled booking"
+        )
 
     if user_id != existing_booking.user_id:
         raise HTTPException(
@@ -139,7 +174,7 @@ async def cancel_booking(
         user_id: int,
         db: AsyncSession,
 ) -> None:
-    existing_booking = await find_existing_booking(booking_id, db)
+    existing_booking = await check_and_find_existing_booking(booking_id, db)
 
     if user_id != existing_booking.user_id:
         raise HTTPException(
@@ -149,3 +184,5 @@ async def cancel_booking(
 
     existing_booking.is_cancelled = True
     await db.commit()
+
+# endregion
