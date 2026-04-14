@@ -56,6 +56,22 @@ async def create_resource_schedule(
         schedule_data: schemas.ResourceScheduleCreate
 ) -> ResourceSchedule:
 
+    query = select(ResourceSchedule).where(
+        ResourceSchedule.resource_id == resource_id,
+        ResourceSchedule.day_of_week == schedule_data.day_of_week,
+        ResourceSchedule.start_time < schedule_data.end_time,
+        ResourceSchedule.end_time > schedule_data.start_time
+    )
+
+    result = await db.execute(query)
+    existing_overlap = result.scalars().first()
+
+    if existing_overlap:
+        raise HTTPException(
+            status_code=400,
+            detail="Интервал расписания пересекается с уже существующим для этого дня"
+        )
+
     db_schedule = ResourceSchedule(
         resource_id=resource_id,
         day_of_week=schedule_data.day_of_week,
