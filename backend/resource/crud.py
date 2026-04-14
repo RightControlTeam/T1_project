@@ -64,20 +64,33 @@ async def create_resource_schedule(
     )
 
     result = await db.execute(query)
-    existing_overlap = result.scalars().first()
+    overlapping_intervals = result.scalars().all()
 
-    if existing_overlap:
-        raise HTTPException(
-            status_code=400,
-            detail="Интервал расписания пересекается с уже существующим для этого дня"
+    if overlapping_intervals:
+        all_starts = [i.start_time for i in overlapping_intervals] + [schedule_data.start_time]
+        all_ends = [i.end_time for i in overlapping_intervals] + [schedule_data.end_time]
+
+        new_start = min(all_starts)
+        new_end = max(all_ends)
+
+        for interval in overlapping_intervals:
+            await db.delete(interval)
+
+        db_schedule = ResourceSchedule(
+            resource_id=resource_id,
+            day_of_week=schedule_data.day_of_week,
+            start_time=new_start,
+            end_time=new_end
         )
 
-    db_schedule = ResourceSchedule(
-        resource_id=resource_id,
-        day_of_week=schedule_data.day_of_week,
-        start_time=schedule_data.start_time,
-        end_time=schedule_data.end_time
-    )
+    else:
+        db_schedule = ResourceSchedule(
+            resource_id=resource_id,
+            day_of_week=schedule_data.day_of_week,
+            start_time=schedule_data.start_time,
+            end_time=schedule_data.end_time
+        )
+
     db.add(db_schedule)
     await db.commit()
     await db.refresh(db_schedule)
