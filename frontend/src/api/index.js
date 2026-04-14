@@ -19,7 +19,7 @@ api.interceptors.response.use(
         // Если токен истёк (401)
         if (error.response?.status === 401) {
             localStorage.removeItem('token')
-            localStorage.removeItem('is_admin')
+            localStorage.removeItem('admin_level')
             router.push('/login')
         }
         return Promise.reject(error)

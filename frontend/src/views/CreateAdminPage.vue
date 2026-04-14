@@ -1,13 +1,12 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter, RouterLink } from 'vue-router' 
 import { register, validate_form } from '@/components/register.js'
-
 
 const form = ref({
   username: '',
-  password: ''
-});
+  password: '',
+  admin_level: 1
+}); 
 
 const error = ref({
     status: '',
@@ -19,24 +18,17 @@ const valid_errors = ref({
     password: ''
 });
 
-const handleRegister = () => {
-  register(validate_form, '/user/register-user', form, error, valid_errors)
+const handleRegisterAdmin = () => {
+  register(validate_form, '/user/register-admin', form, error, valid_errors)
 }
 
 </script>
 
 <template>
     <div class="register-page">
-        <div class="background-circles">
-            <div class="circle circle1"></div>
-            <div class="circle circle2"></div>
-            <div class="circle circle3"></div>
-            <div class="circle circle4"></div>
-            <div class="circle circle5"></div>
-        </div>
         <div class="register-card">
             <h1>Регистрация</h1>
-            <form @submit.prevent="handleRegister">
+            <form @submit.prevent="handleRegisterAdmin">
                 <div class="group-input">
                     <label for="register">Логин</label>
                     <input id="register" v-model="form.username" placeholder="Придумайте логин">
@@ -52,7 +44,6 @@ const handleRegister = () => {
                 <p v-if="error.msg" class="error">{{ error.msg }}</p>
                 </div>
             </form>
-            <p class="to-register">Уже есть аккаунт? <RouterLink to="/login">Войти</RouterLink></p>
         </div>
     </div>
 </template>
@@ -61,12 +52,11 @@ const handleRegister = () => {
 
 .register-page {
     position: fixed;
-    top: 0;
+    top: 82px;
     left: 0;
     right: 0;
     bottom: 0;
     width: 100vw;
-    min-height: 100vh;
 
     background: rgb(167, 201, 255);
     
@@ -158,82 +148,6 @@ button {
     text-align: center;
     color: rgb(255, 0, 0);
     font-weight: 400;
-}
-
-.to-register {
-    font-size: 14px;
-    color: white;
-    font-weight: 400;
-}
-
-a {
-    font-size: 14px;
-    color: #5D20ED;
-    text-decoration: none;  /* убирает подчеркивание */
-    font-weight: 400;
-}
-
-.circle {
-    border-radius: 50%;
-}
-
-.circle1 {
-    position: absolute;
-    width: 480px;
-    height: 480px;
-    left: -94px;
-    top: -154px;
-
-    background: linear-gradient(180deg, #53F4FF 0%, #0044B8 100%);
-    filter: blur(7.5px);
-    transform: rotate(153.5deg);
-}
-
-.circle2 {
-    position: absolute;
-    width: 420px;
-    height: 420px;
-    left: 112.66px;
-    top: 418px;
-
-    background: linear-gradient(304.34deg, #E4D5FF 5.87%, #570FD4 94.13%);
-    filter: blur(7.5px);
-    transform: rotate(-92deg);
-}
-
-.circle3 {
-    position: absolute;
-    width: 275px;
-    height: 275px;
-    left: 835px;
-    top: 25px;
-
-    background: linear-gradient(291.08deg, #E4D5FF 8.43%, #570FD4 91.57%);
-    filter: blur(7.5px);
-    transform: rotate(-92deg);
-}
-
-.circle4 {
-    position: absolute;
-    width: 225px;
-    height: 225px;
-    left: 1086px;
-    top: -3px;
-
-    background: linear-gradient(228.4deg, #53F4FF 0.49%, #0044B8 99.51%);
-    filter: blur(7.5px);
-}
-
-.circle5 {
-    position: absolute;
-    width: 520px;
-    height: 520px;
-    left: 880.28px;
-    top: 326.12px;
-
-    background: linear-gradient(259.37deg, #53F4FF 8.06%, #0044B8 92.09%);
-    filter: blur(7.5px);
-    transform: rotate(173.29deg);
 }
 
 </style>

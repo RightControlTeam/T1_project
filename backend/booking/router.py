@@ -7,7 +7,7 @@ from schemas.booking import BookingCreate, BookingRead
 from logic.booking import create_new_booking
 from security.auth import get_current_user
 
-from backend.booking.booking import Booking
+from backend.booking.models import Booking
 
 router = APIRouter(
     prefix="/booking",
