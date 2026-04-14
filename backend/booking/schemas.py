@@ -1,31 +1,46 @@
-from pydantic import BaseModel, Field, field_validator
-from datetime import datetime, timedelta
-from typing import  Optional
+from pydantic import BaseModel, field_validator
+from datetime import datetime, UTC, timedelta
+
 
 class BookingCreate(BaseModel):
     resource_id: int
     start_time: datetime
     end_time: datetime
-    comment: Optional[str] = None
+
+    @field_validator('start_time')
+    def check_start_time(cls, value: datetime):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        if value < datetime.now(UTC):
+            raise ValueError('Start time cannot be before current time')
+        return value
 
     @field_validator('end_time')
-    def check_times(cls, v, info):
+    def check_end_time(cls, value, info):
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
         start = info.data.get('start_time')
         if start:
-            if v <= start:
-                raise ValueError('Время окончания должно быть позже времени начала')
-            duration = v - start
-            if duration.total_seconds() > 12 * 3600:
-                raise ValueError('Максимальное время бронирования 12 часов')
-        return v
-class BookingRead(BaseModel):
+            if value <= start:
+                raise ValueError('End time should be after start time')
+            duration: timedelta = value - start
+            if duration > timedelta(hours=12):
+                raise ValueError('Maximum booking time length is 12 hours')
+        return value
+
+
+class BookingOut(BaseModel):
+    # fields
     id: int
     user_id: int
     resource_id: int
     start_time: datetime
     end_time: datetime
-    status: str
-    deleted: bool
 
-    class Config:
-        from_attributes = True
+    # properties
+    is_cancelled: bool
+    is_pending: bool
+    is_active: bool
+    is_ended: bool
+
+    model_config = {"from_attributes": True}

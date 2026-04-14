@@ -9,10 +9,10 @@ from .admin_level import AdminLevel
 
 class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
-    password_hash: Mapped[str] = mapped_column(String(60), nullable=False)
-    admin_level: Mapped[int] = mapped_column(default=AdminLevel.user, nullable=False)
-    is_active: Mapped[bool] = mapped_column(default=True, nullable=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True)
+    password_hash: Mapped[str] = mapped_column(String(60))
+    admin_level: Mapped[int] = mapped_column(default=AdminLevel.user)
+    is_active: Mapped[bool] = mapped_column(default=True)
 
     @property
     def is_admin(self) -> bool:

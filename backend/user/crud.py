@@ -15,10 +15,6 @@ from .admin_level import AdminLevel
 
 
 #region get user/users
-async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
-    result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
-
 
 async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
     result = await db.execute(select(User).where(User.username == username))
@@ -46,10 +42,10 @@ async def register_user(
         )
 
     if admin_level == AdminLevel.creator:
-        find_creator = await db.execute(
+        existing_creator = await db.scalar(
             select(User).where(User.admin_level == AdminLevel.creator)
         )
-        if find_creator.first() is not None:
+        if existing_creator is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Creator already exists",
