@@ -34,6 +34,7 @@ class ResourceOut(BaseModel):
     type: str
     description: Optional[str] = None
     is_active: bool
-    schedules: List[ResourceScheduleOut] = []
+    #раскомментировать, когда будет готово отображение расписания
+    #schedules: List[ResourceScheduleOut] = []
     model_config = ConfigDict(from_attributes=True)
 
