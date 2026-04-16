@@ -3,6 +3,9 @@
     import { computed, ref } from 'vue'
     import calendarIcon from '@/components/icons/calendar.svg'
     import katalogIcon from '@/components/icons/katalog.svg'
+    import addIcon from '@/components/icons/add.svg'
+
+    
     const router = useRouter()
     const route = useRoute()
     const showHeader = computed(() => route.path !== '/login' && route.path !== '/register')
@@ -19,8 +22,8 @@
     const Items = computed(() => {
         if (admin_level.value === '2') {
             return [
-                { path: '/create_admin', title: 'Создать админа', icon: '/src/components/icons/add.svg' },
-                { path: '/admin_list', title: 'Список админов', icon: '/src/components/icons/katalog.svg' }
+                { path: '/create_admin', title: 'Создать админа', icon: addIcon },
+                { path: '/admin_list', title: 'Список админов', icon: katalogIcon }
             ]
         }
         const base = [
@@ -32,7 +35,7 @@
             base.push({
                 path: '/create_resource',
                 title: 'Создать',
-                icon: '/src/components/icons/add.svg'
+                icon: addIcon
             })
         }
         
