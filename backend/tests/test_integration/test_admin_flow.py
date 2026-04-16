@@ -3,16 +3,9 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_admin_full_flow(client: AsyncClient):
+async def test_admin_full_flow(client: AsyncClient, test_admin):
     """Полный цикл работы админа"""
-
-    reg = await client.post("/user/register/", json={
-        "username": "bigboss",
-        "password": "BigBoss123",
-        "is_admin": True
-    })
-    assert reg.status_code == 201
-    token = reg.json()["access_token"]
+    admin_user, token = test_admin
 
     create = await client.post(
         "/resource/",

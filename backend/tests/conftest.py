@@ -9,12 +9,13 @@ from main import app
 from core.database import Base, get_db
 from user.models import User
 from user.crud import register_user
+from user.admin_level import AdminLevel
 from user.schemas import RegisterUser
 from resource.models import Resource
 from resource.crud import create_resource
 from resource.schemas import ResourceCreate
+from user.crud import get_user_by_username
 
-# Убедись, что БД test_db существует в Postgres
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
 
 
@@ -29,7 +30,7 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 async def engine():
-    """Создает движок и таблицы (один раз на сессию)"""
+    """Создает движок и таблицы ("""
     engine = create_async_engine(
         TEST_DATABASE_URL,
         echo=False,
@@ -80,28 +81,18 @@ async def client(db_session) -> AsyncGenerator:
 
 @pytest.fixture(scope="function")
 async def test_user(db_session) -> Tuple[User, str]:
-    """Создает пользователя testuser"""
-    user_data = RegisterUser(
-        username="testuser",
-        password="TestPass123",
-        is_admin=False
-    )
-    token_response = await register_user(user_data, db_session)
-    from user.crud import get_user_by_username
+    user_data = RegisterUser(username="testuser", password="TestPass123")
+    # Передаем AdminLevel.user (это 0)
+    token_response = await register_user(user_data, db_session, AdminLevel.user)
     user = await get_user_by_username("testuser", db_session)
     return user, token_response.access_token
 
 
 @pytest.fixture(scope="function")
 async def test_admin(db_session) -> Tuple[User, str]:
-    """Создает админа adminuser"""
-    admin_data = RegisterUser(
-        username="adminuser",
-        password="AdminPass123",
-        is_admin=True
-    )
-    token_response = await register_user(admin_data, db_session)
-    from user.crud import get_user_by_username
+    admin_data = RegisterUser(username="adminuser", password="AdminPass123")
+    # Передаем AdminLevel.admin (это 1)
+    token_response = await register_user(admin_data, db_session, AdminLevel.admin)
     admin = await get_user_by_username("adminuser", db_session)
     return admin, token_response.access_token
 

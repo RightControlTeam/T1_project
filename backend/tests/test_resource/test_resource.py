@@ -109,5 +109,31 @@ async def test_delete_nonexistent_resource(client: AsyncClient, test_admin):
         f"/resource/{non_existent_id}",
         headers={"Authorization": f"Bearer {token}"}
     )
-
     assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_schedule_complex_merge(client: AsyncClient, test_admin, test_resource):
+    """Один новый интервал объединяет два существующих"""
+    _, token = test_admin
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for start, end in [("10:00:00", "12:00:00"), ("14:00:00", "16:00:00")]:
+        await client.post(
+            f"/resource/{test_resource.id}/schedule",
+            json={"day_of_week": 1, "start_time": start, "end_time": end},
+            headers=headers
+        )
+
+    res = await client.post(
+        f"/resource/{test_resource.id}/schedule",
+        json={"day_of_week": 1, "start_time": "11:00:00", "end_time": "15:00:00"},
+        headers=headers
+    )
+    assert res.status_code == 201
+
+    get_res = await client.get(f"/resource/{test_resource.id}", headers=headers)
+    schedules = get_res.json()["schedules"]
+
+    assert len(schedules) == 1
+    assert schedules[0]["start_time"] == "10:00:00"
+    assert schedules[0]["end_time"] == "16:00:00"

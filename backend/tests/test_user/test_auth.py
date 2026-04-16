@@ -5,7 +5,7 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_register_success(client: AsyncClient):
     """Успешная регистрация"""
-    response = await client.post("/user/register/", json={
+    response = await client.post("/user/register-user/", json={
         "username": "newuser",
         "password": "ValidPass123",
         "is_admin": False
@@ -23,10 +23,10 @@ async def test_register_duplicate(client: AsyncClient):
         "is_admin": False
     }
 
-    first_res = await client.post("/user/register/", json=payload)
+    first_res = await client.post("/user/register-user/", json=payload)
     assert first_res.status_code == 201
 
-    second_res = await client.post("/user/register/", json=payload)
+    second_res = await client.post("/user/register-user/", json=payload)
 
     assert second_res.status_code == 409
 
@@ -61,7 +61,7 @@ async def test_login_nonexistent_user(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_register_invalid_username(client: AsyncClient):
     """Тест регистрации с невалидным username"""
-    response = await client.post("/user/register/", json={
+    response = await client.post("/user/register-user/", json={
         "username": "a",
         "password": "ValidPass123",
         "is_admin": False
@@ -71,9 +71,25 @@ async def test_register_invalid_username(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_register_invalid_password(client: AsyncClient):
     """Тест регистрации с невалидным паролем"""
-    response = await client.post("/user/register/", json={
+    response = await client.post("/user/register-user/", json={
         "username": "validuser",
         "password": "short",
         "is_admin": False
+    })
+    assert response.status_code == 422
+
+@pytest.mark.parametrize("bad_username", [
+    "abc",
+    "123admin",
+    "_user123",
+    "user!name",
+    "a" * 26
+])
+@pytest.mark.asyncio
+async def test_register_invalid_usernames(client: AsyncClient, bad_username):
+    """Проверка всех условий функции is_username_valid"""
+    response = await client.post("/user/register-user/", json={
+        "username": bad_username,
+        "password": "ValidPass123"
     })
     assert response.status_code == 422

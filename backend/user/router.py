@@ -10,6 +10,7 @@ from . import schemas, crud
 from core.database import get_db
 from .models import User
 from core.dependencies import get_current_user, get_current_admin, get_current_creator
+from user.crud import register_user, get_user_by_username
 from security.token import TokenResponse
 from core.config import settings
 from .admin_level import AdminLevel
@@ -32,18 +33,6 @@ async def register_user(
     new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.user)
     return new_user
 
-
-@user_router.post(
-    path="/register-user/",
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED
-)
-async def register_user(
-        user: schemas.RegisterUser,
-        db=Depends(get_db)
-):
-    new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.user)
-    return new_user
 
 
 @user_router.post(

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import selectinload
-
+from resource.models import Resource
 from .models import Resource, ResourceSchedule
 from . import schemas
 
@@ -94,6 +94,11 @@ async def create_resource_schedule(
     db.add(db_schedule)
     await db.commit()
     await db.refresh(db_schedule)
+
+    resource = await db.get(Resource, resource_id)
+    if resource:
+        await db.refresh(resource, ["schedules"])
+
     return db_schedule
 
 async def get_resource(db: AsyncSession, resource_id: int) -> Optional[Resource]:

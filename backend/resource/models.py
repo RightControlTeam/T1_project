@@ -15,7 +15,7 @@ class Resource(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_active:Mapped[bool] = mapped_column(Boolean,default=False,nullable=False)
 
-    schedules: Mapped[list["ResourceSchedule"]] = relationship(back_populates="resource", cascade="all, delete-orphan")
+    schedules: Mapped[list["ResourceSchedule"]] = relationship(back_populates="resource", cascade="all, delete-orphan",lazy="selectin")
 
 class ResourceSchedule(Base):
     __tablename__ = "resource_schedule"
