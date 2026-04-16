@@ -1,24 +1,30 @@
 from pydantic import BaseModel, field_validator
-from datetime import datetime, UTC, timedelta
-
+from datetime import datetime, timedelta
+from core.config import settings
 
 class BookingCreate(BaseModel):
     resource_id: int
     start_time: datetime
     end_time: datetime
 
+    @field_validator('start_time', 'end_time', mode='before')
+    def check_timezone(cls, value):
+        if isinstance(value, str):
+            value = datetime.fromisoformat(value)
+        if value.tzinfo is None:
+            return value.replace(tzinfo=settings.time_zone)
+        return value.astimezone(settings.time_zone)
+
+
     @field_validator('start_time')
     def check_start_time(cls, value: datetime):
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=UTC)
-        if value < datetime.now(UTC):
+        if value < datetime.now(settings.time_zone):
             raise ValueError('Start time cannot be before current time')
         return value
 
+
     @field_validator('end_time')
     def check_end_time(cls, value, info):
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=UTC)
         start = info.data.get('start_time')
         if start:
             if value <= start:

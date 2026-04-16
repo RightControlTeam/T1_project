@@ -3,6 +3,8 @@
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from zoneinfo import ZoneInfo
+
 
 
 class Settings(BaseSettings):
@@ -22,6 +24,13 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int
 
     CREATOR_REGISTRATION_KEY: str
+
+    RESOURCES_TIME_ZONE: str
+
+    @computed_field
+    @property
+    def time_zone(self) -> ZoneInfo:
+        return ZoneInfo(self.RESOURCES_TIME_ZONE)
 
     @computed_field
     @property
