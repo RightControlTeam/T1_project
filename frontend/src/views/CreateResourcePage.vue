@@ -135,6 +135,16 @@ function getSlotClass(slotIndex) {
 
 // Обработчик клика по ячейке
 function handleSlotClick(slotIndex) {
+  if (selectedStart.value === slotIndex) {
+    errorMessage.value = `Выберите другую ячейку для завершения интервала (${indexToLabel(slotIndex)} уже выбрана как начало)`
+    
+    setTimeout(() => {
+      errorMessage.value = ''
+    }, 2500)
+    
+    return
+  }
+  
   if (selectedStart.value === null) {
     selectedStart.value = slotIndex
     hoverEnd.value = slotIndex
@@ -151,7 +161,6 @@ function handleSlotClick(slotIndex) {
       selectedStart.value = null
       hoverEnd.value = null
       
-      // Автоматически скрываем ошибку через 3 секунды
       setTimeout(() => {
         errorMessage.value = ''
       }, 3000)
@@ -166,7 +175,6 @@ function handleSlotClick(slotIndex) {
     errorMessage.value = ''
   }
 }
-
 
 // Обработчик наведения
 function handleSlotMouseEnter(slotIndex) {
