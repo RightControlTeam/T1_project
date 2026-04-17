@@ -18,6 +18,11 @@ const daysOfWeek = [
 
 const activeDay = ref(0)
 const errorMessage = ref('')
+const errors = ref({
+    name: '',
+    type: '',
+    schedules: ''
+})
 const form = ref({
     name: '',
     type: '',
@@ -190,7 +195,7 @@ function handleGridMouseLeave() {
   }
 }
 
-// Удаление диапазона по клику с Ctrl
+// Удаление диапазона по клику
 function removeRange(day, range) {
   schedulesByDay.value[day].delete(range)
 }
@@ -240,22 +245,52 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
 
+function validate() {
+  errors.value = {
+    name: '',
+    type: '',
+    schedules: ''
+  }
+  
+  let is_valid = true
+  
+  if (!form.value.name || form.value.name.trim() === '') {
+    errors.value.name = 'Обязательное поле!'
+    is_valid = false
+  }
+  
+  if (!form.value.type) {
+    errors.value.type = 'Обязательное поле!'
+    is_valid = false
+  }
+  
+  const schedules = convertSchedulesToApiFormat()
+  if (schedules.length === 0) {
+    errors.value.schedules = 'Выберите хотя бы один временной интервал!'
+    is_valid = false
+  }
+  
+  return is_valid
+}
+
 async function submit() {
-  try {
-    console.log(schedulesByDay.value)
-    const resourceResponse = await api.post('/resource', form.value)
-    console.log("Отправлено")
+  if (validate()) {
+    try {
+      console.log(schedulesByDay.value)
+      const resourceResponse = await api.post('/resource', form.value)
+      console.log("Отправлено")
 
-    const shedules = convertSchedulesToApiFormat()
-    for (const time of shedules) {
-      await api.post(`/resource/${resourceResponse.data.id}/schedule`, time)
+      const shedules = convertSchedulesToApiFormat()
+      for (const time of shedules) {
+        await api.post(`/resource/${resourceResponse.data.id}/schedule`, time)
+      }
+      console.log("Расписание добавлено")
+
+      const request = await api.get('/resource')
+      console.log(request.data)
+    } catch (e) {
+      console.log(e)
     }
-    console.log("Расписание добавлено")
-
-    const request = await api.get('/resource')
-    console.log(request.data)
-  } catch (e) {
-    console.log(e)
   }
 }
 </script>
@@ -265,11 +300,12 @@ async function submit() {
     <h1>Создание ресурса</h1>
     <form @submit.prevent="submit">
       <div class="group-input">
-        <label for="name">Название</label>
+        <label for="name">Название <span class="required">*</span></label>
         <input id="name" v-model="form.name" placeholder="Введите название">
+        <p v-if="errors.name" class="error valid">{{ errors.name }}</p>
       </div>
       <div class="choose">
-        <label>Выберите категорию</label>
+        <label>Выберите категорию <span class="required">*</span></label>
         <select v-model="form.type">
           <option value="" disabled>Не выбрано</option>
           <option value="laptop">Ноутбук</option>
@@ -277,6 +313,7 @@ async function submit() {
           <option value="projector">Проектор</option>
           <option value="other">Другое</option>
         </select>
+        <p v-if="errors.type" class="error valid">{{ errors.type }}</p>
       </div>
       <div class="group-input">
         <label for="description">Описание</label>
@@ -284,7 +321,7 @@ async function submit() {
       </div>
       
       <div class="schedule">
-        <div>Для каждого нужного вам дня выберите рабочие часы ресурса:</div>
+        <div>Для каждого нужного вам дня выберите рабочие часы ресурса: <span class="required">*</span></div>
         
         <div class="days">
           <div 
@@ -300,11 +337,12 @@ async function submit() {
           </div>
         </div>
         
-        <!-- Сообщение об ошибке пересечения -->
         <div v-if="errorMessage" class="error-message">
           <span class="error-icon">⚠️</span>
           {{ errorMessage }}
         </div>
+        
+        <p v-if="errors.schedules" class="error valid">{{ errors.schedules }}</p>
         
         <div v-if="savedRangesForActiveDay.length > 0" class="saved-ranges">
           <div class="saved-ranges-label">Выбранные интервалы:</div>
@@ -354,6 +392,18 @@ async function submit() {
 </template>
 
 <style scoped>
+.required {
+  color: #D32F2F;
+  margin-left: 4px;
+}
+
+.error.valid {
+  color: #D32F2F;
+  font-size: 13px;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
 .error-message {
   display: flex;
   align-items: center;
@@ -490,14 +540,12 @@ async function submit() {
   background: #4A1ACC;
 }
 
-/* Начало диапазона */
 .time-slot.slot-start {
   border-top-left-radius: 12px;
   border-bottom-left-radius: 12px;
   position: relative;
 }
 
-/* Конец диапазона */
 .time-slot.slot-end {
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
@@ -514,7 +562,6 @@ async function submit() {
   background: #C4A8FF;
 }
 
-/* Сохранённые диапазоны */
 .saved-ranges {
   display: flex;
   flex-direction: column;
