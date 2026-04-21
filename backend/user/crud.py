@@ -17,18 +17,30 @@ from .admin_level import AdminLevel
 #region get user/users
 
 async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
-    result = await db.execute(select(User).where(User.username == username))
-    return result.scalar_one_or_none()
+    result = await db.scalar(
+        select(User).where(User.username == username).where(User.is_active == True)
+    )
+    return result
 
 async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
-    result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
-
-
-async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
-    result = await db.execute(
-        select(User).offset(skip).limit(limit)
+    result = await db.scalar(
+        select(User).where(User.id == user_id)
     )
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found",
+        )
+    return result
+
+
+async def get_users(admins: bool, skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
+    query = select(User).offset(skip).limit(limit).where(User.is_active == True)
+    if admins:
+        query = query.where(User.admin_level == AdminLevel.admin)
+    else:
+        query = query.where(User.admin_level == AdminLevel.user)
+    result = await db.execute(query)
     return result.scalars().all()
 #endregion
 
@@ -74,9 +86,8 @@ async def register_user(
 async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
     user: Optional[User] = await get_user_by_username(login_data.username, db)
     if (
-            not user
-            or not user.is_active
-            or not verify_password(login_data.password, user.password_hash)
+        not user
+        or not verify_password(login_data.password, user.password_hash)
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -94,11 +105,6 @@ async def test_delete(user: User, db: AsyncSession) -> None:
 
 async def delete_by_id(user_id: int, db: AsyncSession) -> None:
     user: User = await get_user_by_id(user_id, db)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found",
-        )
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

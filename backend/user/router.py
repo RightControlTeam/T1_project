@@ -7,7 +7,6 @@ from . import schemas, crud
 from core.database import get_db
 from .models import User
 from core.dependencies import get_current_user, get_current_admin, get_current_creator
-from user.crud import register_user, get_user_by_username
 from security.token import TokenResponse
 from core.config import settings
 from .admin_level import AdminLevel
@@ -87,7 +86,6 @@ async def verify_user(
 #endregion
 
 #region get
-
 @user_router.get(
     path="/profile/",
     response_model=schemas.UserOut
@@ -97,18 +95,21 @@ async def get_profile(
 ):
     return user
 
+
 @user_router.get(
     path="/",
     response_model=list[schemas.UserOut]
 )
 async def get_users(
+    admins: bool = False,
     skip: int = 0,
     limit: int = 10,
     _: User = Depends(get_current_creator),
     db=Depends(get_db)
 ):
-    users = await crud.get_users(skip, limit, db)
+    users = await crud.get_users(admins, skip, limit, db)
     return users
+
 
 @user_router.get(
     path="/{user_id}",
@@ -119,9 +120,8 @@ async def get_by_id(
     _: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    return await crud.get_user_by_id(user_id, db)
-
-
+    result = await crud.get_user_by_id(user_id, db)
+    return result
 #endregion
 
 #region delete
