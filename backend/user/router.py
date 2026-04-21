@@ -120,7 +120,7 @@ async def get_by_id(
     _: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    result = await crud.get_user_by_id(user_id, db)
+    result = await crud.get_user_by_id(user_id, db, True)
     return result
 #endregion
 

@@ -22,11 +22,11 @@ async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User
     )
     return result
 
-async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
+async def get_user_by_id(user_id: int, db: AsyncSession, err: bool = False) -> Optional[User]:
     result = await db.scalar(
         select(User).where(User.id == user_id)
     )
-    if result is None:
+    if result is None and err:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User not found",
@@ -104,7 +104,7 @@ async def test_delete(user: User, db: AsyncSession) -> None:
 
 
 async def delete_by_id(user_id: int, db: AsyncSession) -> None:
-    user: User = await get_user_by_id(user_id, db)
+    user: User = await get_user_by_id(user_id, db, True)
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
