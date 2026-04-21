@@ -112,6 +112,33 @@ async def get_user_profile(
 
 
 @user_router.delete(
+    path="/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_me(
+        user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    await crud.delete_by_id(user.id, db)
+
+@user_router.delete(
+    path="/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_by_id(
+        user_id: int,
+        creator: User = Depends(get_current_creator),
+        db: AsyncSession = Depends(get_db)
+):
+    if user_id == creator.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can't delete yourself by id, use simple delete"
+        )
+    await crud.delete_by_id(user_id, db)
+
+#region ONLY FOR TEST
+@user_router.delete(
     path="/delete/",
     status_code=status.HTTP_204_NO_CONTENT
 )
@@ -119,7 +146,7 @@ async def delete_user_test(
         user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    await crud.delete_user(user, db)
+    await crud.test_delete(user, db)
 
 
 @user_router.delete(
@@ -130,4 +157,6 @@ async def delete_admin_test(
         user: User = Depends(get_current_admin),
         db: AsyncSession = Depends(get_db)
 ):
-    await crud.delete_user(user, db)
+    await crud.test_delete(user, db)
+
+#endregion

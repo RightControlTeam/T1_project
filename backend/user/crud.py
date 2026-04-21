@@ -20,6 +20,10 @@ async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User
     result = await db.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
 
+async def get_user_by_id(user_id: int, db: AsyncSession) -> Optional[User]:
+    result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
+
 
 async def get_users(skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
     result = await db.execute(
@@ -81,8 +85,25 @@ async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -
     return generate_login_response(user.id, user.admin_level)
 
 
-async def delete_user(user: User, db: AsyncSession) -> None:
+async def test_delete(user: User, db: AsyncSession) -> None:
     # потом будет не очистка из бд, а отметка об удалении
     await db.delete(user)
     await db.commit()
 #endregion
+
+
+async def delete_by_id(user_id: int, db: AsyncSession) -> None:
+    user: User = await get_user_by_id(user_id, db)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"User is already deleted",
+        )
+    user.is_active = False
+    await db.commit()
+    await db.refresh(user)
