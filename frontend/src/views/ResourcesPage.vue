@@ -1,7 +1,8 @@
 <script setup>
   import api from '@/api/index'
   import { computed, onMounted, ref } from 'vue'
-import { ssrLooseContain } from 'vue/server-renderer';
+  import deleteIcon from '@/components/icons/delete.svg'
+  import editIcon from '@/components/icons/edit.svg'
 
   const resources = ref([])
   const error = ref('')
@@ -20,7 +21,8 @@ import { ssrLooseContain } from 'vue/server-renderer';
     schedules: ''
   })
   const date = ref('')
-
+  const admin_level = ref(localStorage.getItem('admin_level'))
+  
   async function get_resources() {
     try {
         error.value = ''
@@ -61,6 +63,7 @@ import { ssrLooseContain } from 'vue/server-renderer';
       const response = await api.post('/booking/', booking_form.value)
       alert(`Забронирован ресурс ${selected_resource.value.name}`)
       close_modal()
+      resetSelection()
       console.log(response.data)
       console.log('success')
     }
@@ -190,6 +193,18 @@ function getSlotClass(slotIndex) {
   }
 }
 
+async function delete_resource(resource_id) {
+  try {
+    const confirmed = confirm('Вы уверены, что хотите удалить этот ресурс?')
+    if (!confirmed) return
+    await api.delete(`/resource/${resource_id}`)
+    console.log("success")
+  }
+  catch (e) {
+    console.log(e)
+  }
+}
+
 </script>
 
 <template>
@@ -203,9 +218,18 @@ function getSlotClass(slotIndex) {
         <span>Описание</span>
         <p>{{ truncate(resource.description, 150) }}</p>
       </div>
-      <button @click="open_modal(resource)">Забронировать</button>
+      <div class="book">
+        <button @click="delete_resource" class="custom-button">
+          <img v-if="admin_level === '1'" :src="editIcon" alt="edit">
+        </button>
+        <button @click="open_modal(resource)">Забронировать</button>
+        <button @click="delete_resource(resource.id)" class="custom-button">
+          <img v-if="admin_level === '1'" :src="deleteIcon" alt="delete">
+        </button>
+      </div>
     </div>
   </div>
+
   <div v-if="show_modal" @click="close_modal" class="modal-overlay">
     <div @click.stop class="modal">
       <h3>{{ selected_resource.name }}</h3>
@@ -238,6 +262,16 @@ function getSlotClass(slotIndex) {
 </template>
 
 <style scoped>
+.custom-button {
+  border: none;
+  margin: 0px;
+  padding: 0px
+}
+.book {
+  display: flex;
+  align-items: center;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
@@ -362,7 +396,7 @@ p {
   margin-top: 4px;
 }
 button {
-    margin: 16px auto;
+    margin: 8px auto;
     padding: 12px 16px;
     background: white;
     border-radius: 8px;
