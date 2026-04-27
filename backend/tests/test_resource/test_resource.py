@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import pytest
 from httpx import AsyncClient
 
@@ -137,3 +138,28 @@ async def test_schedule_complex_merge(client: AsyncClient, test_admin, test_reso
     assert len(schedules) == 1
     assert schedules[0]["start_time"] == "10:00:00"
     assert schedules[0]["end_time"] == "16:00:00"
+
+
+@pytest.mark.asyncio
+async def test_delete_resource_with_active_bookings(client: AsyncClient, test_admin, test_user):
+    _, admin_token = test_admin
+    _, user_token = test_user
+
+    res = await client.post("/resource/",
+                            json={"name": "Test", "type": "room"},
+                            headers={"Authorization": f"Bearer {admin_token}"})
+    resource_id = res.json()["id"]
+
+    await client.post(f"/resource/{resource_id}/schedule",
+                      json={"day_of_week": 0, "start_time": "00:00:00", "end_time": "23:59:59"},
+                      headers={"Authorization": f"Bearer {admin_token}"})
+
+    tomorrow = (datetime.now() + timedelta(days=1)).isoformat()
+    await client.post("/booking/",
+                      json={"resource_id": resource_id, "start_time": tomorrow, "end_time": tomorrow},
+                      headers={"Authorization": f"Bearer {user_token}"})
+
+    delete_res = await client.delete(f"/resource/{resource_id}",
+                                     headers={"Authorization": f"Bearer {admin_token}"})
+
+    assert delete_res.status_code == 204

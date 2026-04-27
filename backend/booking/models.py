@@ -1,6 +1,6 @@
 from sqlalchemy import ForeignKey, func, and_, DateTime
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, backref
 from datetime import datetime, UTC
 
 from core.database import Base
@@ -40,8 +40,14 @@ class Booking(Base):
         return and_(cls.start_time <= now, cls.end_time >= now)
 
     user = relationship("User", backref="bookings")
-    resource = relationship("Resource", backref="bookings")
-
+    resource = relationship(
+        "Resource",
+        backref=backref(
+            "bookings",
+            cascade="all, delete-orphan",
+            passive_deletes=True
+        )
+    )
 
 
     def __repr__(self):
