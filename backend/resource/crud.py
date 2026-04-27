@@ -17,6 +17,14 @@ async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate
     db.add(db_resource)
     await db.commit()
     await db.refresh(db_resource)
+
+    result = await db.execute(
+        select(Resource)
+        .options(selectinload(Resource.schedules))
+        .where(Resource.id == db_resource.id)
+    )
+    db_resource = result.scalar_one()
+
     return db_resource
 
 # async def get_resource(db: AsyncSession,resource_id:int) -> Optional[Resource]:
@@ -25,7 +33,7 @@ async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate
 #     )
 #     return result.scalar_one_or_none()
 async def get_resources(db: AsyncSession,  skip: int = 0,  limit: int = 100, type: Optional[str] = None) -> List[Resource]:
-    query = select(Resource)
+    query = select(Resource).options(selectinload(Resource.schedules))
     if type:
            query = query.where(Resource.type == type)
     query = query.offset(skip).limit(limit)
@@ -41,6 +49,14 @@ async def update_resource(db: AsyncSession,resource_id: int,resource_data: schem
         setattr(resource, field, value)
     await db.commit()
     await db.refresh(resource)
+
+    result = await db.execute(
+        select(Resource)
+        .options(selectinload(Resource.schedules))
+        .where(Resource.id == resource.id)
+    )
+    resource = result.scalar_one()
+    
     return resource
 
 async def delete_resource(db: AsyncSession,resource_id) -> None:

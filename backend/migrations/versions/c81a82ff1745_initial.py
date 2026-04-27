@@ -1,8 +1,8 @@
-"""full_initial_schema
+"""initial
 
-Revision ID: a163e284a9a0
+Revision ID: c81a82ff1745
 Revises: 
-Create Date: 2026-04-14 15:16:16.754680
+Create Date: 2026-04-21 20:48:09.527999
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a163e284a9a0'
+revision: str = 'c81a82ff1745'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,10 +36,10 @@ def upgrade() -> None:
     sa.Column('password_hash', sa.String(length=60), nullable=False),
     sa.Column('admin_level', sa.Integer(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('username')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_user_id'), 'user', ['id'], unique=False)
+    op.create_index('uq_active_username', 'user', ['username'], unique=True, postgresql_where='is_active = true')
     op.create_table('booking',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -72,6 +72,7 @@ def downgrade() -> None:
     op.drop_table('resource_schedule')
     op.drop_index(op.f('ix_booking_id'), table_name='booking')
     op.drop_table('booking')
+    op.drop_index('uq_active_username', table_name='user', postgresql_where='is_active = true')
     op.drop_index(op.f('ix_user_id'), table_name='user')
     op.drop_table('user')
     op.drop_index(op.f('ix_resource_id'), table_name='resource')

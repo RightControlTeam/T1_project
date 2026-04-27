@@ -21,7 +21,7 @@ class RegisterUser(BaseModel):
         return value
 
 class RegisterAdmin(RegisterUser):
-    admin_registration_key: str
+    creator_registration_key: str
 
 
 

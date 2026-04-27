@@ -57,7 +57,7 @@
         if (validate_form()) {
             try {
                 console.log('Отправляю')
-                const response = await api.post('/user/login', 
+                const response = await api.post('/user/login/', 
                                                 qs.stringify(form.value), 
                                                 {headers: 
                                                     {'Content-Type': 'application/x-www-form-urlencoded'}
