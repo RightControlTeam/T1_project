@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn import run
 
+import logging
+
 from user.router import user_router
 from resource.router import resource_router
 from booking.router import booking_router
@@ -21,6 +23,15 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("backend.log")
+    ]
+)
+logger = logging.getLogger("t1_project")
 
 app.include_router(user_router)
 app.include_router(resource_router)

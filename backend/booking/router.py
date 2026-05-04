@@ -1,3 +1,4 @@
+import logging
 from typing import Sequence, Optional
 
 from fastapi import APIRouter, Depends, Query, status
@@ -10,6 +11,7 @@ from user.models import User
 from core.dependencies import get_db
 from . import crud
 
+logger = logging.getLogger(__name__)
 booking_router = APIRouter(
     prefix="/booking",
     tags=["booking"]
@@ -25,6 +27,7 @@ async def create_booking(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    logger.info(f"User {user.username} (ID {user.id}) is creating a booking for resource {new_booking.resource_id}")
     return await crud.create_booking(new_booking, user.id, db)
 
 
@@ -49,6 +52,7 @@ async def update_booking(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    logger.info(f"User {user.username} (ID {user.id}) is updating booking ID {booking_id}")
     return await crud.update_booking(edited_booking, booking_id, user.id, db)
 
 
@@ -61,6 +65,7 @@ async def cancel_booking(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> None:
+    logger.info(f"User {user.username} (ID: {user.id}) is cancelling booking ID: {booking_id}")
     await crud.cancel_booking(booking_id, user.id, db)
 
 

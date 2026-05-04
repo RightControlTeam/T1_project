@@ -1,5 +1,5 @@
 # user/crud.py
-
+import logging
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -13,7 +13,7 @@ from .models import User
 from . import schemas
 from .admin_level import AdminLevel
 
-
+logger = logging.getLogger(__name__) # Будет использовать имя модуля
 #region get user/users
 
 async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
@@ -50,8 +50,10 @@ async def register_user(
         db: AsyncSession,
         admin_level: int
 ) -> TokenResponse:
+    logger.info(f"register user {user_create.username} with level {admin_level}")
     existing_user = await get_user_by_username(user_create.username, db)
     if existing_user:
+        logger.warning(f"Registration failed User {user_create.username} already exists")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"User already exists",
@@ -62,6 +64,7 @@ async def register_user(
             select(User).where(User.admin_level == AdminLevel.creator)
         )
         if existing_creator is not None:
+            logger.warning("Registration failed: Creator already exists")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Creator already exists",
@@ -77,6 +80,7 @@ async def register_user(
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    logger.info(f"User {user_create.username} successfully registered with ID {new_user.id}")
     return generate_login_response(new_user.id, new_user.admin_level)
 
 #endregion
@@ -89,10 +93,12 @@ async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -
         not user
         or not verify_password(login_data.password, user.password_hash)
     ):
+        logger.warning(f"Failed login attempt for username: {login_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
+    logger.info(f"User {user.username} (ID: {user.id}) logged in")
     return generate_login_response(user.id, user.admin_level)
 
 

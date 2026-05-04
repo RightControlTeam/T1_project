@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
@@ -7,7 +9,7 @@ from core.dependencies import get_current_user
 from user.models import User
 from . import schemas, crud
 
-
+logger = logging.getLogger(__name__)
 resource_router = APIRouter(
     prefix="/resource",
     tags=["resource"],
@@ -20,7 +22,9 @@ resource_router = APIRouter(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_resource(resource_data: schemas.ResourceCreate,db: AsyncSession = Depends(get_db),current_user: User = Depends(get_current_user))->schemas.ResourceOut:
+    logger.info(f"User {current_user.id} ({current_user.username}) attempt to create resource: {resource_data.name}")
     if not current_user.is_admin:
+        logger.warning(f"Access denied: User {current_user.id} is not an admin")
         raise HTTPException(status_code=403, detail="Only admins can do this")
     return await crud.create_resource(db, resource_data)
 
@@ -37,10 +41,12 @@ async def create_resource_schedule(
         current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_admin:
+        logger.warning(f"Access denied for schedule creation: User {current_user.id}")
         raise HTTPException(status_code=403, detail="Only admins can do this")
 
     resource = await crud.get_resource(db, resource_id)
     if not resource:
+        logger.warning(f"Schedule creation failed: Resource {resource_id} not found")
         raise HTTPException(status_code=404, detail="Resource not found")
 
     return await crud.create_resource_schedule(db, resource_id, schedule_data)
@@ -78,7 +84,9 @@ async def get_resources(
     response_model=schemas.ResourceOut,
 )
 async def update_resource(resource_id:int,resource_data: schemas.ResourceUpdate, db: AsyncSession = Depends(get_db),current_user: User = Depends(get_current_user)) -> schemas.ResourceOut:
+    logger.info(f"Admin {current_user.id} updating resource {resource_id}")
     if not current_user.is_admin:
+        logger.warning(f"Access denied for update: User {current_user.id}")
         raise HTTPException(status_code=403, detail="Only admins can do this")
     return await crud.update_resource(db, resource_id, resource_data)
 
@@ -88,7 +96,9 @@ async def update_resource(resource_id:int,resource_data: schemas.ResourceUpdate,
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_resource(resource_id: int, db: AsyncSession = Depends(get_db),current_user: User = Depends(get_current_user)):
+    logger.info(f" Admin {current_user.id} is deleting resource {resource_id}")
     if not current_user.is_admin:
+        logger.warning(f"Access denied for deletion: User {current_user.id}")
         raise HTTPException(status_code=403, detail="Only admins can do this")
     await crud.delete_resource(db, resource_id)
     return None

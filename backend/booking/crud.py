@@ -8,6 +8,10 @@ from resource.models import ResourceSchedule, Resource
 from .models import Booking
 from .schemas import BookingCreate
 
+import logging
+
+
+logger = logging.getLogger(__name__)
 # region Checks
 
 async def check_time_overlap(
@@ -32,6 +36,7 @@ async def check_time_overlap(
     result = await db.scalar(query)
 
     if result is not None:
+        logger.warning(f"Overlap found, booking conflicts with existing Booking ID: {result.id}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Booking time overlaps with existing booking(s) for this resource",
@@ -46,6 +51,7 @@ async def check_existing_resource(
         select(Resource).where(Resource.id == booking.resource_id)
     )
     if existing_resource is None:
+        logger.warning(f"Resource check failed ID {booking.resource_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Resource not found"
@@ -68,6 +74,7 @@ async def check_schedule(
         )
     )
     if match_range is None:
+        logger.warning(f"Schedule mismatch: Resource {booking.resource_id}is not available at {booking.start_time.time()}-{booking.end_time.time()} on weekday {week_day}")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Booking time range does not match schedule"
@@ -103,6 +110,7 @@ async def create_booking(
         user_id: int,
         db: AsyncSession
 ) -> Booking:
+    logger.info(f"User {user_id} is creating a booking for resource {new_booking.resource_id}")
 
     await check_existing_resource(new_booking, db)
     await check_schedule(new_booking, db)
@@ -114,6 +122,8 @@ async def create_booking(
     db.add(booking)
     await db.commit()
     await db.refresh(booking)
+
+    logger.info(f"Booking created successfully: ID {booking.id}")
     return booking
 
 
@@ -142,18 +152,22 @@ async def update_booking(
         user_id: int,
         db: AsyncSession
 ) -> Booking:
+    logger.info(f"User {user_id} attempting to update Booking ID {booking_id}")
+
     await check_existing_resource(updated_booking, db)
     await check_schedule(updated_booking, db)
     await check_time_overlap(updated_booking, db, booking_id)
     existing_booking = await check_and_find_existing_booking(booking_id, db)
 
     if existing_booking.is_cancelled:
+        logger.warning(f"Update rejected Booking {booking_id} is cancelled")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot update a cancelled booking"
         )
 
     if user_id != existing_booking.user_id:
+        logger.error(f"Permission denied User {user_id} tried to edit User {existing_booking.user_id}'s booking")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to edit this booking"
@@ -174,9 +188,11 @@ async def cancel_booking(
         user_id: int,
         db: AsyncSession,
 ) -> None:
+    logger.info(f"User {user_id} is cancelling Booking ID {booking_id}")
     existing_booking = await check_and_find_existing_booking(booking_id, db)
 
     if user_id != existing_booking.user_id:
+        logger.error(f"Permission denied: User {user_id} tried to cancel User {existing_booking.user_id}'s booking")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to cancel this booking"

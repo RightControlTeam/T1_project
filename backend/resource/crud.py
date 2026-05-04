@@ -6,8 +6,11 @@ from sqlalchemy.orm import selectinload
 from resource.models import Resource
 from .models import Resource, ResourceSchedule
 from . import schemas
+import logging
 
+logger = logging.getLogger(__name__)
 async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate)-> Resource:
+    logger.info(f"Creating new resource {resource_data.name} with type {resource_data.type}")
     data = resource_data.model_dump()
     db_resource = Resource(name = data["name"],
                            type = data["type"],
@@ -18,6 +21,7 @@ async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate
     await db.commit()
     await db.refresh(db_resource)
 
+    logger.info(f"Resource '{db_resource.name}' created with ID {db_resource.id}")
     result = await db.execute(
         select(Resource)
         .options(selectinload(Resource.schedules))
@@ -41,15 +45,20 @@ async def get_resources(db: AsyncSession,  skip: int = 0,  limit: int = 100, typ
     return result.scalars().all()
 
 async def update_resource(db: AsyncSession,resource_id: int,resource_data: schemas.ResourceUpdate) -> Resource:
+    logger.info(f"Updating resource ID {resource_id}")
     resource = await get_resource(db,resource_id)
     if not resource:
+        logger.warning(f"Update failed Resource ID {resource_id} not found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Resource not found")
     update_data = resource_data.model_dump(exclude_unset=True)
+    logger.info(f"Fields to update for resource {resource_id}: {list(update_data.keys())}")
+
     for field, value in update_data.items():
         setattr(resource, field, value)
     await db.commit()
     await db.refresh(resource)
 
+    logger.info(f"Resource {resource_id} successfully updated")
     result = await db.execute(
         select(Resource)
         .options(selectinload(Resource.schedules))
@@ -62,16 +71,18 @@ async def update_resource(db: AsyncSession,resource_id: int,resource_data: schem
 async def delete_resource(db: AsyncSession,resource_id) -> None:
     resource = await get_resource(db,resource_id)
     if not resource:
+        logger.warning(f"Delete failed: Resource ID {resource_id} not found")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Resource not found")
     await db.delete(resource)
     await db.commit()
+    logger.info(f"Resource {resource_id} and all related data deleted successfully")
 
 async def create_resource_schedule(
         db: AsyncSession,
         resource_id: int,
         schedule_data: schemas.ResourceScheduleCreate
 ) -> ResourceSchedule:
-
+    logger.info(f"Setting schedule for resource {resource_id}: Day {schedule_data.day_of_week}, {schedule_data.start_time}-{schedule_data.end_time}")
     query = select(ResourceSchedule).where(
         ResourceSchedule.resource_id == resource_id,
         ResourceSchedule.day_of_week == schedule_data.day_of_week,
@@ -114,7 +125,7 @@ async def create_resource_schedule(
     resource = await db.get(Resource, resource_id)
     if resource:
         await db.refresh(resource, ["schedules"])
-
+    logger.info(f"Schedule ID {db_schedule.id} created for resource {resource_id}")
     return db_schedule
 
 async def get_resource(db: AsyncSession, resource_id: int) -> Optional[Resource]:

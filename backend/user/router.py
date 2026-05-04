@@ -10,7 +10,9 @@ from core.dependencies import get_current_user, get_current_admin, get_current_c
 from security.token import TokenResponse
 from core.config import settings
 from .admin_level import AdminLevel
+import logging
 
+logger = logging.getLogger(__name__)
 user_router = APIRouter(
     prefix="/user",
     tags=["user"],
@@ -26,6 +28,7 @@ async def register_user(
         user: schemas.RegisterUser,
         db=Depends(get_db)
 ):
+    logger.info(f"Public registration attempt for username {user.username}")
     new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.user)
     return new_user
 
@@ -41,6 +44,7 @@ async def register_admin(
         db=Depends(get_db),
         _creator: User = Depends(get_current_creator)
 ):
+    logger.info(f"Creator {_creator.username} (ID {_creator.id}) is registering new ADMIN {user.username}")
     new_user: TokenResponse = await crud.register_user(user, db, AdminLevel.admin)
     return new_user
 
@@ -54,6 +58,7 @@ async def register_creator(
         db=Depends(get_db)
 ):
     if user.creator_registration_key != settings.CREATOR_REGISTRATION_KEY:
+        logger.warning(f"Security Alert: Invalid creator key used by {user.username}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Creator registration key is incorrect"
@@ -72,11 +77,13 @@ async def verify_user(
         db: AsyncSession = Depends(get_db)
 ):
     if not is_username_valid(login_data.username):
+        logger.warning(f"Login failed: Invalid username format '{login_data.username}'")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username validation error",
         )
     if not is_password_valid(login_data.password):
+        logger.warning(f"Login failed: Invalid password format '{login_data.username}'")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password validation error",
@@ -133,6 +140,7 @@ async def delete_me(
         user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
+    logger.info(f"User {user.username} (ID {user.id}) is deactivating their account")
     await crud.delete_by_id(user.id, db)
 
 @user_router.delete(
@@ -144,7 +152,9 @@ async def delete_by_id(
         creator: User = Depends(get_current_creator),
         db: AsyncSession = Depends(get_db)
 ):
+
     if user_id == creator.id:
+        logger.warning(f"Creator {creator.username} tried to delete themselves via ID")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can't delete yourself by id, use simple delete"
