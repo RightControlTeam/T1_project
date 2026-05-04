@@ -195,10 +195,11 @@ function getSlotClass(slotIndex) {
 
 async function delete_resource(resource_id) {
   try {
-    const confirmed = confirm('Вы уверены, что хотите удалить этот ресурс?')
+    const confirmed = confirm('Вы уверены, что хотите удалить этот ресурс? Все брони удалятся вместе с ним!')
     if (!confirmed) return
     await api.delete(`/resource/${resource_id}`)
     console.log("success")
+    await get_resources()
   }
   catch (e) {
     console.log(e)
