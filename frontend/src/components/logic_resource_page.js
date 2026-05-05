@@ -40,6 +40,10 @@ export function useResourcesPage() {
       const request = await api.get('/resource')
       resources.value = request.data.map(resource => {
         resource.schedules.sort((a, b) => {
+          if (a.day_of_week !== b.day_of_week) {
+            return a.day_of_week - b.day_of_week
+          }
+
           return a.start_time.localeCompare(b.start_time)
         })
         return resource
