@@ -345,10 +345,38 @@ export function useResourcesPage() {
     return false
   }
 
-  // Проверяет, заблокирован ли слот (занят или является перерывом)
+  //получение московского времени
+  function getMoscowNow() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' }))
+  }
+
+  function isTimeInPast(dateString, timeString) {
+    const moscowNow = getMoscowNow()
+    const [year, month, day] = dateString.split('-').map(Number)
+    const [hours, minutes] = timeString.split(':').map(Number)
+    const slotDate = new Date(year, month - 1, day, hours, minutes)
+    return slotDate < moscowNow
+  }
+
+  // Проверяет, доступен ли слот для выбора (не в прошлом)
+  function isSlotSelectable(slotIndex) {
+    if (!selectedDate.value) return true
+    
+    const slotTime = timeSlotsWithBreaks.value[slotIndex]
+    if (!slotTime || slotTime.isBreak) return false
+    
+    if (isTimeInPast(selectedDate.value, slotTime.time)) {
+      return false
+    }
+    
+    return !isSlotBooked(slotTime.time) && !isSlotInSelectedIntervals(slotTime.time)
+  }
+
+  // Проверяет, заблокирован ли слот (занят или является перерывом или уже в прошлом)
   function isSlotDisabled(slotIndex) {
     const slotItem = timeSlotsWithBreaks.value[slotIndex]
     if (!slotItem || slotItem.isBreak) return true
+    if (!isSlotSelectable(slotIndex)) return true
     return isSlotBooked(slotItem.time) || isSlotInSelectedIntervals(slotItem.time)
   }
 
@@ -547,16 +575,13 @@ export function useResourcesPage() {
     
     try {
       for (const interval of bookingIntervals.value) {
-        const startDateTime = new Date(`${selectedDate.value}T${interval.start}:00`)
-        const endDateTime = new Date(`${selectedDate.value}T${interval.end}:00`)
-      
-        startDateTime.setHours(startDateTime.getHours() - 3)
-        endDateTime.setHours(endDateTime.getHours() - 3)
+        const startTimeStr = `${selectedDate.value}T${interval.start}:00+03:00`
+        const endTimeStr = `${selectedDate.value}T${interval.end}:00+03:00`
         
         const bookingData = {
             resource_id: selectedResource.value.id,
-            start_time: startDateTime.toISOString(),
-            end_time: endDateTime.toISOString()
+            start_time: startTimeStr,
+            end_time: endTimeStr   
         }
 
         console.log('Бронирование:', {
@@ -575,6 +600,7 @@ export function useResourcesPage() {
       closeModal()
     } catch (e) {
       console.error(e)
+      console.log(e.response.data)
       alert(`Ошибка бронирования: ${e.response?.data?.detail || 'Неизвестная ошибка'}`)
     }
   }
