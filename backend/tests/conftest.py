@@ -98,7 +98,7 @@ async def test_admin(db_session) -> Tuple[User, str]:
 
 
 @pytest.fixture(scope="function")
-async def test_resource(db_session, test_admin) -> Resource:
+async def test_resource(db_session) -> Resource:
     """Создает тестовый ресурс"""
     resource_data = ResourceCreate(
         name="Test Room",
@@ -107,3 +107,17 @@ async def test_resource(db_session, test_admin) -> Resource:
         is_active=True
     )
     return await create_resource(db_session, resource_data)
+
+@pytest.fixture(scope="function")
+async def created_resource(test_resource):
+    return test_resource
+
+@pytest.fixture(scope="function")
+async def admin_token_headers(test_admin):
+    _, token = test_admin
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.fixture(scope="function")
+async def user_token_headers(test_user):
+    _, token = test_user
+    return {"Authorization": f"Bearer {token}"}
