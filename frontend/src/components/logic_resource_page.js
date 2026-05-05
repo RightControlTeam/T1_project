@@ -179,10 +179,23 @@ export function useResourcesPage() {
         const bookingDate = booking.start_time.split('T')[0]
         return bookingDate === dateStr && !booking.is_cancelled
       })
-      bookedSlots.value = filterBooking.map(booking => ({
-        start: booking.start_time.split('T')[1]?.slice(0, 5) || '',
-        end: booking.end_time.split('T')[1]?.slice(0, 5) || ''
-      }))
+      bookedSlots.value = filterBooking.map(booking => {
+        // Получаем UTC время
+        let utcStart = booking.start_time.split('T')[1]?.slice(0, 5) || ''
+        let utcEnd = booking.end_time.split('T')[1]?.slice(0, 5) || ''
+        
+        // Конвертируем в московское (прибавляем 3 часа)
+        const startHours = parseInt(utcStart.split(':')[0]) + 3
+        const endHours = parseInt(utcEnd.split(':')[0]) + 3
+        
+        const moscowStart = `${String(startHours).padStart(2, '0')}:${utcStart.split(':')[1]}`
+        const moscowEnd = `${String(endHours).padStart(2, '0')}:${utcEnd.split(':')[1]}`
+        
+        return {
+          start: moscowStart,
+          end: moscowEnd
+        }
+      })
       console.log('Брони', bookedSlots.value)
     } catch (e) {
       console.error('Ошибка загрузки броней:', e)
