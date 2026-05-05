@@ -38,7 +38,12 @@ export function useResourcesPage() {
     try {
       error.value = ''
       const request = await api.get('/resource')
-      resources.value = request.data
+      resources.value = request.data.map(resource => {
+        resource.schedules.sort((a, b) => {
+          return a.start_time.localeCompare(b.start_time)
+        })
+        return resource
+      })
       console.log(request.data)
     } catch (e) {
       error.value = e.response?.data?.detail || 'Ошибка загрузки ресурсов'
@@ -247,6 +252,15 @@ export function useResourcesPage() {
     selectedDate.value = minDate.value
     resetSelection()
     await loadBookedSlots(selectedDate.value, resource.id)
+
+    if (window.bookingRefreshInterval) {
+      clearInterval(window.bookingRefreshInterval)
+    }
+    window.bookingRefreshInterval = setInterval(async () => {
+      if (showModal.value && selectedDate.value && selectedResource.value) {
+        await loadBookedSlots(selectedDate.value, selectedResource.value.id)
+      }
+    }, 30000) 
   }
 
   // Закрывает модальное окно и сбрасывает все состояния
@@ -255,6 +269,11 @@ export function useResourcesPage() {
     selectedResource.value = null
     selectedDate.value = ''
     resetSelection()
+
+    if (window.bookingRefreshInterval) {
+      clearInterval(window.bookingRefreshInterval)
+      window.bookingRefreshInterval = null
+    }
   }
 
 
@@ -526,13 +545,24 @@ export function useResourcesPage() {
       for (const interval of bookingIntervals.value) {
         const startDateTime = new Date(`${selectedDate.value}T${interval.start}:00`)
         const endDateTime = new Date(`${selectedDate.value}T${interval.end}:00`)
+      
+        startDateTime.setHours(startDateTime.getHours() - 3)
+        endDateTime.setHours(endDateTime.getHours() - 3)
         
         const bookingData = {
             resource_id: selectedResource.value.id,
             start_time: startDateTime.toISOString(),
             end_time: endDateTime.toISOString()
         }
-        console.log(`${bookingData.resource_id} ${bookingData.start_time} ${bookingData.end_time}`)
+
+        console.log('Бронирование:', {
+        resource_id: bookingData.resource_id,
+        start_local: `${selectedDate.value} ${interval.start}`,
+        start_utc: bookingData.start_time,
+        end_local: `${selectedDate.value} ${interval.end}`,
+        end_utc: bookingData.end_time
+      })
+
         await api.post('/booking/', bookingData)
         console.log('Забронировано')
       }
