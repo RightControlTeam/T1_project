@@ -2,7 +2,7 @@
 import logging
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Sequence
 from fastapi.security import OAuth2PasswordRequestForm
@@ -34,14 +34,30 @@ async def get_user_by_id(user_id: int, db: AsyncSession, err: bool = False) -> O
     return result
 
 
-async def get_users(admins: bool, skip: int, limit: int, db: AsyncSession) -> Sequence[User]:
-    query = select(User).offset(skip).limit(limit).where(User.is_active == True)
+async def get_users(
+    admins: bool,
+    skip: int,
+    limit: int,
+    db: AsyncSession
+) -> tuple[Sequence[User], int]:
+    base_query = select(User).where(User.is_active == True)
     if admins:
-        query = query.where(User.admin_level == AdminLevel.admin)
+        base_query = base_query.where(User.admin_level == AdminLevel.admin)
     else:
-        query = query.where(User.admin_level == AdminLevel.user)
-    result = await db.execute(query)
-    return result.scalars().all()
+        base_query = base_query.where(User.admin_level == AdminLevel.user)
+
+
+    count_query = select(func.count()).select_from(base_query.subquery())
+    count_result = await db.execute(count_query)
+    total_count = count_result.scalar_one()
+
+
+    list_query = base_query.offset(skip).limit(limit)
+    result = await db.execute(list_query)
+    users =  result.scalars().all()
+
+    return users, total_count
+
 #endregion
 
 #region register
