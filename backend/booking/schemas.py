@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, field_serializer
 from datetime import datetime, timedelta
 from core.config import settings
 
@@ -50,3 +50,8 @@ class BookingOut(BaseModel):
     is_ended: bool
 
     model_config = {"from_attributes": True}
+
+    @field_serializer('start_time', 'end_time')
+    def serialize_datetime(self, dt: datetime):
+        local_dt = dt.astimezone(settings.time_zone)
+        return local_dt.isoformat()

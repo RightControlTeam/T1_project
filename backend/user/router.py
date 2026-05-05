@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 from .validation import is_password_valid, is_username_valid
@@ -108,13 +108,16 @@ async def get_profile(
     response_model=list[schemas.UserOut]
 )
 async def get_users(
+    response: Response,
     admins: bool = False,
     skip: int = 0,
     limit: int = 10,
     _: User = Depends(get_current_creator),
     db=Depends(get_db)
 ):
-    users = await crud.get_users(admins, skip, limit, db)
+    users, total_count = await crud.get_users(admins, skip, limit, db)
+    response.headers["X-Total-Count"] = str(total_count)
+    response.headers["Access-Control-Expose-Headers"] = "X-Total-Count"
     return users
 
 
@@ -160,29 +163,5 @@ async def delete_by_id(
             detail="You can't delete yourself by id, use simple delete"
         )
     await crud.delete_by_id(user_id, db)
-
-#endregion
-
-#region ONLY FOR TEST
-@user_router.delete(
-    path="/delete/",
-    status_code=status.HTTP_204_NO_CONTENT
-)
-async def delete_user_test(
-        user: User = Depends(get_current_user),
-        db: AsyncSession = Depends(get_db)
-):
-    await crud.test_delete(user, db)
-
-
-@user_router.delete(
-    path="/delete-admin/",
-    status_code=status.HTTP_204_NO_CONTENT
-)
-async def delete_admin_test(
-        user: User = Depends(get_current_admin),
-        db: AsyncSession = Depends(get_db)
-):
-    await crud.test_delete(user, db)
 
 #endregion
