@@ -226,7 +226,7 @@ function cancelSelection() {
   errorMessage.value = ''
 }
 
-// Обработчик клика по слоту (главная логика выделения)
+// Обработчик клика по слоту 
 function handleSlotClick(slotIndex) {
   // Случай 1: Кликнули на тот же слот, который уже выбран как начало
   if (selectedStart.value === slotIndex) {
@@ -239,7 +239,7 @@ function handleSlotClick(slotIndex) {
     return
   }
   
-  // Случай 2: Начало еще не выбрано
+
   if (selectedStart.value === null) {
     if (isSlotInSavedRange(activeDay.value, slotIndex).inRange) {
       errorMessage.value = `Выберите другую ячейку для создания интервала (${indexToLabel(slotIndex)} уже выбрана в другом интервале)`
@@ -254,7 +254,6 @@ function handleSlotClick(slotIndex) {
     hoverEnd.value = slotIndex
   } 
   
-  // Случай 3: Начало выбрано, завершаем выделение
   else {
     const start = Math.min(selectedStart.value, slotIndex)
     const end = Math.max(selectedStart.value, slotIndex)
@@ -370,11 +369,9 @@ function clean_form() {
 async function submit() {
   if (validate()) {
     try {
-      // Создаем ресурс
       const resourceResponse = await api.post('/resource', form.value)
       console.log("Ресурс создан")
       
-      // Добавляем расписание для ресурса
       const schedules = convertSchedulesToApiFormat()
       for (const time of schedules) {
         await api.post(`/resource/${resourceResponse.data.id}/schedule`, time)
@@ -385,7 +382,6 @@ async function submit() {
       const request = await api.get('/resource')
       console.log(request.data)
 
-      // Отчищаем все
       clean_form()
 
       alert('Ресурс успешно создан!')
