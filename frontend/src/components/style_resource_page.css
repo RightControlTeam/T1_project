@@ -71,16 +71,21 @@ h1 {
   word-wrap: break-word;      /* Переносит длинные слова */
   overflow-wrap: break-word;  /* Современный аналог word-wrap */
   hyphens: auto;              /* Автоматические переносы */
+
+  position: relative;
+  z-index: 1;
 }
 
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(93, 32, 237, 0.15);
+
+  z-index: 2;
 }
 
 .card-header {
   height: 46px;
-  overflow: hidden;  
+  overflow: hidden;
 }
 
 .card-title {

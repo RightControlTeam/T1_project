@@ -206,14 +206,14 @@ export function useResourcesPage() {
   // Проверяет, занят ли временной слот существующими бронированиями
   function isSlotBooked(slotTime) {
     return bookedSlots.value.some(booking => {
-      return slotTime >= booking.start && slotTime < booking.end
+      return slotTime > booking.start && slotTime < booking.end
     })
   }
 
   // Проверяет, входит ли слот в уже выбранные интервалы бронирования
   function isSlotInSelectedIntervals(slotTime) {
     return bookingIntervals.value.some(interval => {
-      return slotTime >= interval.start && slotTime < interval.end
+      return slotTime > interval.start && slotTime < interval.end
     })
   }
 
