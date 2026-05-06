@@ -185,15 +185,15 @@ export function useResourcesPage() {
         let utcEnd = booking.end_time.split('T')[1]?.slice(0, 5) || ''
         
         // Конвертируем в московское (прибавляем 3 часа)
-        const startHours = parseInt(utcStart.split(':')[0]) + 3
+        /* const startHours = parseInt(utcStart.split(':')[0]) + 3
         const endHours = parseInt(utcEnd.split(':')[0]) + 3
         
         const moscowStart = `${String(startHours).padStart(2, '0')}:${utcStart.split(':')[1]}`
-        const moscowEnd = `${String(endHours).padStart(2, '0')}:${utcEnd.split(':')[1]}`
+        const moscowEnd = `${String(endHours).padStart(2, '0')}:${utcEnd.split(':')[1]}` */
         
         return {
-          start: moscowStart,
-          end: moscowEnd
+          start: utcStart,
+          end: utcEnd
         }
       })
       console.log('Брони', bookedSlots.value)

@@ -2,7 +2,6 @@
     import { ref } from 'vue'
     import api from '@/api/index'
     import { useRouter, RouterLink } from 'vue-router'
-    import {  register } from '@/components/register.js'
     import qs from 'qs'     // библиотека, которая преобразует JavaScript объекты в формат application/x-www-form-urlencoded для OAuth 2.0 Password Grant
 
     const router = useRouter()
@@ -73,7 +72,7 @@
                 else {
                     window.location.href = '/'
                 }
-
+                
             } catch (e) {
                 if (!e.response) {
                     error.value.msg = 'Сервер не отвечает'

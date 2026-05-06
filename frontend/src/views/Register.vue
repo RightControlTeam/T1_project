@@ -19,15 +19,15 @@ const valid_errors = ref({
     password: ''
 });
 
-const handleRegister = () => {
-  register(validate_form, '/user/register-user', form, error, valid_errors)
+const handleRegisterUser = async () => {
+  await register(validate_form, '/user/register-user', form, error, valid_errors)
 }
 
 </script>
 
 <template>
     <div class="register-page">
-        <div class="background-circles">
+        <div class="circles-container">
             <div class="circle circle1"></div>
             <div class="circle circle2"></div>
             <div class="circle circle3"></div>
@@ -36,7 +36,7 @@ const handleRegister = () => {
         </div>
         <div class="register-card">
             <h1>Регистрация</h1>
-            <form @submit.prevent="handleRegister">
+            <form @submit.prevent="handleRegisterUser">
                 <div class="group-input">
                     <label for="register">Логин</label>
                     <input id="register" v-model="form.username" placeholder="Придумайте логин">
@@ -173,67 +173,149 @@ a {
     font-weight: 400;
 }
 
+.circles-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .circle {
-    border-radius: 50%;
+  position: absolute;
+  border-radius: 50%;
 }
 
 .circle1 {
-    position: absolute;
-    width: 480px;
-    height: 480px;
-    left: -94px;
-    top: -154px;
-
-    background: linear-gradient(180deg, #53F4FF 0%, #0044B8 100%);
-    filter: blur(7.5px);
-    transform: rotate(153.5deg);
+  width: 480px;
+  height: 480px;
+  left: -94px;
+  top: -154px;
+  background: linear-gradient(180deg, #53F4FF 0%, #0044B8 100%);
+  filter: blur(7.5px);
+  transform: rotate(153.5deg);
+  animation: float1 8s ease-in-out infinite;
 }
 
 .circle2 {
-    position: absolute;
-    width: 420px;
-    height: 420px;
-    left: 112.66px;
-    top: 418px;
-
-    background: linear-gradient(304.34deg, #E4D5FF 5.87%, #570FD4 94.13%);
-    filter: blur(7.5px);
-    transform: rotate(-92deg);
+  width: 420px;
+  height: 420px;
+  left: 112.66px;
+  top: 418px;
+  background: linear-gradient(304.34deg, #E4D5FF 5.87%, #570FD4 94.13%);
+  filter: blur(7.5px);
+  transform: rotate(-92deg);
+  animation: float2 10s ease-in-out infinite;
 }
 
 .circle3 {
-    position: absolute;
-    width: 275px;
-    height: 275px;
-    left: 835px;
-    top: 25px;
-
-    background: linear-gradient(291.08deg, #E4D5FF 8.43%, #570FD4 91.57%);
-    filter: blur(7.5px);
-    transform: rotate(-92deg);
+  width: 275px;
+  height: 275px;
+  left: 835px;
+  top: 25px;
+  background: linear-gradient(291.08deg, #E4D5FF 8.43%, #570FD4 91.57%);
+  filter: blur(7.5px);
+  transform: rotate(-92deg);
+  animation: float3 8s ease-in-out infinite;
 }
 
 .circle4 {
-    position: absolute;
-    width: 225px;
-    height: 225px;
-    left: 1086px;
-    top: -3px;
-
-    background: linear-gradient(228.4deg, #53F4FF 0.49%, #0044B8 99.51%);
-    filter: blur(7.5px);
+  width: 225px;
+  height: 225px;
+  left: 1086px;
+  top: -3px;
+  background: linear-gradient(228.4deg, #53F4FF 0.49%, #0044B8 99.51%);
+  filter: blur(7.5px);
+  animation: float4 9s ease-in-out infinite;
 }
 
 .circle5 {
-    position: absolute;
-    width: 520px;
-    height: 520px;
-    left: 880.28px;
-    top: 326.12px;
+  width: 520px;
+  height: 520px;
+  left: 880.28px;
+  top: 326.12px;
+  background: linear-gradient(259.37deg, #53F4FF 8.06%, #0044B8 92.09%);
+  filter: blur(7.5px);
+  transform: rotate(173.29deg);
+  animation: float5 11s ease-in-out infinite;
+}
 
-    background: linear-gradient(259.37deg, #53F4FF 8.06%, #0044B8 92.09%);
-    filter: blur(7.5px);
-    transform: rotate(173.29deg);
+/* Анимации плавания */
+@keyframes float1 {
+  0%, 100% {
+    transform: rotate(153.5deg) translate(0, 0);
+  }
+  25% {
+    transform: rotate(158.5deg) translate(20px, -15px);
+  }
+  50% {
+    transform: rotate(153.5deg) translate(40px, 10px);
+  }
+  75% {
+    transform: rotate(148.5deg) translate(-10px, 25px);
+  }
+}
+
+@keyframes float2 {
+  0%, 100% {
+    transform: rotate(-92deg) translate(0, 0);
+  }
+  25% {
+    transform: rotate(-87deg) translate(-25px, 20px);
+  }
+  50% {
+    transform: rotate(-92deg) translate(-15px, -20px);
+  }
+  75% {
+    transform: rotate(-97deg) translate(15px, -10px);
+  }
+}
+
+@keyframes float3 {
+  0%, 100% {
+    transform: rotate(-92deg) translate(0, 0);
+  }
+  33% {
+    transform: rotate(-87deg) translate(30px, 15px);
+  }
+  66% {
+    transform: rotate(-97deg) translate(-15px, -25px);
+  }
+}
+
+@keyframes float4 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, 15px) scale(1.05);
+  }
+  50% {
+    transform: translate(-15px, 20px) scale(0.95);
+  }
+  75% {
+    transform: translate(25px, -15px) scale(1.02);
+  }
+}
+
+@keyframes float5 {
+  0%, 100% {
+    transform: rotate(173.29deg) translate(0, 0);
+  }
+  20% {
+    transform: rotate(178.29deg) translate(-20px, -20px);
+  }
+  40% {
+    transform: rotate(173.29deg) translate(-35px, 15px);
+  }
+  60% {
+    transform: rotate(168.29deg) translate(15px, 25px);
+  }
+  80% {
+    transform: rotate(173.29deg) translate(25px, -10px);
+  }
 }
 
 </style>

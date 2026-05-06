@@ -57,6 +57,7 @@ export async function register(validate_form, path, form, error, valid_errors) {
         if (response.data.admin_level == 0) {
             router.push('/')
         }
+        return true
     }
     catch (e) {
         if (!e.response) {
@@ -72,6 +73,8 @@ export async function register(validate_form, path, form, error, valid_errors) {
                 error.value.msg = 'Произошла ошибка'
             }
         }
+        return false
     }
   }
+  return false
 }

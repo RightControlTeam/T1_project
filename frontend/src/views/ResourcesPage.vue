@@ -1,8 +1,26 @@
 <script setup>
+import { useRoute } from 'vue-router'
+import { onMounted, ref, computed } from 'vue'
 import { useResourcesPage } from '../components/logic_resource_page.js'
 import deleteIcon from '@/components/icons/delete.svg'
 import editIcon from '@/components/icons/edit.svg'
 
+const route = useRoute()
+
+onMounted(async () => {
+  await getResources()
+  
+  // Если есть параметр book - открываем модалку
+  const resourceId = route.query.book
+  if (resourceId) {
+    const resource = resources.value.find(r => r.id == resourceId)
+    if (resource) {
+      openModal(resource)
+    }
+  }
+})
+
+const selectedTypes = ref([])
 
 const {
   resources,
@@ -42,6 +60,12 @@ const {
   findSlotIndexByTime
 } = useResourcesPage()
 
+
+const filteredResources = computed(() => {
+  if (selectedTypes.value.length === 0) return resources.value
+  return resources.value.filter(resource => selectedTypes.value.includes(resource.type))
+})
+
 </script>
 
 <template>
@@ -60,9 +84,27 @@ const {
   <!-- Список ресурсов -->
   <div v-else class="resources-container">
     <h1>Доступные ресурсы</h1>
+    <div class="filters">
+        <label>
+        <input type="checkbox" value="laptop" v-model="selectedTypes">
+        Ноутбук
+      </label>
+      <label>
+        <input type="checkbox" value="room" v-model="selectedTypes">
+        Переговорная
+      </label>
+      <label>
+        <input type="checkbox" value="projector" v-model="selectedTypes">
+        Проектор
+      </label>
+      <label>
+        <input type="checkbox" value="other" v-model="selectedTypes">
+        Другое
+      </label>
+    </div>
     
     <div class="cards">
-      <div v-for="resource in resources" :key="resource.id" class="card">
+      <div v-for="resource in filteredResources" :key="resource.id" class="card">
         <div class="card-header">
           <h3 class="card-title">{{ resource.name }}</h3>
         </div>
@@ -182,3 +224,13 @@ const {
 </template>
 
 <style src="../components/style_resource_page.css" scoped></style>
+
+<style scoped>
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+</style>

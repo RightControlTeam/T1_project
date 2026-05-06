@@ -100,7 +100,16 @@
         filter: brightness(0) saturate(100%) invert(18%) sepia(100%) saturate(2000%) hue-rotate(250deg);
     }
     .logout {
+        padding: 6px 8px;
         margin-left: auto;
+        color: #5D20ED;
+        background: #fff;
+        border:#5D20ED solid 2px;
+        border-radius: 8px;
+    }
+    .logout:hover {
+        background: #f6f1ff;
+        transition: all 0.3s ease-in-out
     }
     
 </style>

@@ -18,8 +18,11 @@ const valid_errors = ref({
     password: ''
 });
 
-const handleRegisterAdmin = () => {
-  register(validate_form, '/user/register-admin', form, error, valid_errors)
+const handleRegisterAdmin = async () => {
+    const res = await register(validate_form, '/user/register-admin', form, error, valid_errors)
+    if (res === true) {
+        alert("Регистрация успешно завершена!")
+    }
 }
 
 </script>
