@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from user_module.login_data_validator import is_username_valid, is_password_valid
+from user_module.login_data_validator import LoginDataValidator
 
 
 class UserRequest(BaseModel):
@@ -8,13 +8,13 @@ class UserRequest(BaseModel):
 
     @field_validator('username')
     def validate_username(cls, value: str):
-        if not is_username_valid(value):
+        if not LoginDataValidator.is_username_valid(value):
             raise ValueError("Username validation error")
         return value
 
     @field_validator('password')
     def validate_password(cls, value: str):
-        if not is_password_valid(value):
+        if not LoginDataValidator.is_password_valid(value):
             raise ValueError("Password validation error")
         return value
 
