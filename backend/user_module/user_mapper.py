@@ -1,18 +1,18 @@
 from user_module.user import User
 from user_module.schemas import UserResponse, UserRequest
-from security.password import get_password_hash
+from security.password_service import PasswordService
 from typing import Optional
 
 
 class UserMapper:
     @staticmethod
-    def from_request(request: UserRequest, user: Optional[User]) -> Optional[User]:
+    def from_request(request: UserRequest, user: Optional[User] = None) -> Optional[User]:
         if request is None:
             return user
         if user is None:
             user = User()
         user.username = request.username
-        user.password_hash = get_password_hash(request.password)
+        user.password_hash = PasswordService.get_password_hash(request.password)
         return user
 
     @staticmethod

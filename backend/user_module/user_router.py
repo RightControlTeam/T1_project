@@ -6,7 +6,7 @@ from . import schemas
 from core.database import get_db
 from .user import User
 from core.dependencies import get_current_user, get_current_admin, get_current_creator
-from security.token import TokenResponse
+from security.token_service import TokenResponse
 from .admin_level import AdminLevel
 import logging
 from .user_service import UserService
@@ -15,15 +15,15 @@ from .user_mapper import UserMapper
 
 logger = logging.getLogger(__name__)
 user_router = APIRouter(
-    prefix="/user_module",
-    tags=["user_module"],
+    prefix = "/user",
+    tags = ["user"],
 )
 
 #region register
 @user_router.post(
-    path="/register-user_module",
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED
+    path = "/register-user",
+    response_model = TokenResponse,
+    status_code = status.HTTP_201_CREATED
 )
 async def register_user(
         user: schemas.UserRequest,
@@ -33,9 +33,9 @@ async def register_user(
 
 
 @user_router.post(
-    path="/register-admin",
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED
+    path = "/register-admin",
+    response_model = TokenResponse,
+    status_code = status.HTTP_201_CREATED
 )
 async def register_admin(
         user: schemas.UserRequest,
@@ -46,7 +46,7 @@ async def register_admin(
 
 @user_router.post(
     path="/register-creator",
-    response_model=TokenResponse,
+    response_model = TokenResponse,
     status_code=status.HTTP_201_CREATED
 )
 async def register_creator(
@@ -131,4 +131,17 @@ async def delete_by_id(
         db: AsyncSession = Depends(get_db)
 ):
     await UserService.delete_other_by_id(user_id, db, creator.id)
+#endregion
+
+#region Update
+@user_router.put(
+    path="/",
+    response_model=schemas.UserResponse
+)
+async def update(
+    request: schemas.UserRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    return await UserService.update(user.id, request, db)
 #endregion

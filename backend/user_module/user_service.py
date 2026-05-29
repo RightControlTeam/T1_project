@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from fastapi.security import OAuth2PasswordRequestForm
 
-from security.password import get_password_hash, verify_password
-from security.token import generate_login_response, TokenResponse
+from security.password_service import PasswordService
+from security.token_service import generate_login_response, TokenResponse
 from .user import User
 from . import schemas
 from .admin_level import AdminLevel
@@ -70,15 +70,11 @@ class UserService:
                     detail=f"Creator already exists",
                 )
 
-
-        password_hash: str = get_password_hash(request.password)
-        new_user: User = User(
-            username=request.username,
-            password_hash=password_hash,
-            admin_level= admin_level
-        )
+        new_user: User = UserMapper.from_request(request)
+        new_user.admin_level = admin_level
         new_user = await UserRepository.create(new_user, db)
         return generate_login_response(new_user)
+
 
     @staticmethod
     async def create_creator(request: CreatorRequest, db: AsyncSession) -> TokenResponse:
@@ -88,6 +84,7 @@ class UserService:
                 detail="Creator registration key is incorrect"
             )
         return await UserService.create(request, db, AdminLevel.creator)
+
 
     @staticmethod
     async def verify_user(login_data: OAuth2PasswordRequestForm, db: AsyncSession) -> TokenResponse:
@@ -105,13 +102,14 @@ class UserService:
         if (
             user is None
             or
-            not verify_password(login_data.password, user.password_hash)
+            not PasswordService.verify_password(login_data.password, user.password_hash)
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password"
             )
         return generate_login_response(user)
+
 
     @staticmethod
     async def delete_by_id(user_id: int, db: AsyncSession) -> UserResponse:
@@ -133,10 +131,10 @@ class UserService:
 
 
     @staticmethod
-    async def update(user_id: int, user_request: UserRequest, db: AsyncSession) -> UserResponse:
+    async def update(user_id: int, request: UserRequest, db: AsyncSession) -> UserResponse:
         user: Optional[User] = await UserRepository.get_by_id(user_id, db)
         UserService.raise_if_not_found_or_not_active(user, user_id)
-        user = UserMapper.from_request(user_request, user)
+        user = UserMapper.from_request(request, user)
         user = await UserRepository.update(user, db)
         return UserMapper.to_response(user)
 

@@ -33,11 +33,9 @@ class UserRepository:
         else:
             base_query = base_query.filter_by(admin_level = AdminLevel.user)
 
-
         count_query = select(func.count()).select_from(base_query.subquery())
         count_result = await db.execute(count_query)
         total_count = count_result.scalar_one()
-
 
         list_query = base_query.offset(skip).limit(limit)
         result = await db.execute(list_query)

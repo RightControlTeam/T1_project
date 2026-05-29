@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db
-from security.token import decode_jwt, JWTPayload
+from security.token_service import decode_jwt, JWTPayload
 from user_module.user import User
 
 
