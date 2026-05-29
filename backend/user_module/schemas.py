@@ -1,10 +1,8 @@
-# user/schemas.py
-
 from pydantic import BaseModel, field_validator
-from user.validation import is_username_valid, is_password_valid
+from user_module.login_data_validator import is_username_valid, is_password_valid
 
 
-class RegisterUser(BaseModel):
+class UserRequest(BaseModel):
     username: str
     password: str
 
@@ -20,13 +18,10 @@ class RegisterUser(BaseModel):
             raise ValueError("Password validation error")
         return value
 
-class RegisterAdmin(RegisterUser):
+class CreatorRequest(UserRequest):
     creator_registration_key: str
 
-
-
-
-class UserOut(BaseModel):
+class UserResponse(BaseModel):
     id: int
     username: str
     admin_level: int

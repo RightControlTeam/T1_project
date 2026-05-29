@@ -8,7 +8,7 @@ from core.database import Base
 
 class Booking(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_module.id", ondelete="CASCADE"))
     resource_id: Mapped[int] = mapped_column(ForeignKey("resource.id", ondelete="CASCADE"))
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))

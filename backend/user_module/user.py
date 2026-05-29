@@ -1,10 +1,8 @@
-# user/models.py
 from sqlalchemy import String, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
 from .admin_level import AdminLevel
-
 
 
 class User(Base):

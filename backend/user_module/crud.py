@@ -1,4 +1,3 @@
-# user/crud.py
 import logging
 
 from fastapi import HTTPException, status
@@ -9,12 +8,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from security.password import get_password_hash, verify_password
 from security.token import generate_login_response, TokenResponse
-from .models import User
+from .user import User
 from . import schemas
 from .admin_level import AdminLevel
 
 logger = logging.getLogger(__name__) # Будет использовать имя модуля
-#region get user/users
+#region get user_module/users
 
 async def get_user_by_username(username: str, db: AsyncSession) -> Optional[User]:
     result = await db.scalar(
@@ -62,7 +61,7 @@ async def get_users(
 
 #region register
 async def register_user(
-        user_create: schemas.RegisterUser,
+        user_create: schemas.UserRequest,
         db: AsyncSession,
         admin_level: int
 ) -> TokenResponse:

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from booking.schemas import BookingOut, BookingCreate
 from core.dependencies import get_current_user
 
-from user.models import User
+from user_module.user import User
 from core.dependencies import get_db
 from . import crud
 

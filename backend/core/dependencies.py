@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db
 from security.token import decode_jwt, JWTPayload
-from user.models import User
+from user_module.user import User
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user_module/login/")
 
 
 async def get_current_user(

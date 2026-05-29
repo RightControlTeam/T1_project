@@ -11,7 +11,7 @@ from core.config import settings
 
 from core.database import Base
 
-from user.models import User
+from user_module.user import User
 
 from resource.models import Resource
 

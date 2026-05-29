@@ -7,7 +7,7 @@ from uvicorn import run
 
 import logging
 
-from user.router import user_router
+from user_module.user_router import user_router
 from resource.router import resource_router
 from booking.router import booking_router
 
