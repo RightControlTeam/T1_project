@@ -15,6 +15,7 @@ class UserMapper:
         user.password_hash = PasswordService.get_password_hash(request.password)
         return user
 
+
     @staticmethod
     def to_response(user: User) -> Optional[UserResponse]:
         if user is None:
@@ -27,5 +28,5 @@ class UserMapper:
         )
 
     @staticmethod
-    def range_to_response(users: list[User]) -> list[UserResponse]:
+    def list_to_response(users: list[User]) -> list[UserResponse]:
         return [UserMapper.to_response(user) for user in users]

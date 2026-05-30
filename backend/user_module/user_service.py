@@ -46,7 +46,7 @@ class UserService:
         db: AsyncSession
     ) -> tuple[list[UserResponse], int]:
         result: tuple[list[User], int] = await UserRepository.get_range(admins, skip, limit, db)
-        return UserMapper.range_to_response(result[0]), result[1]
+        return UserMapper.list_to_response(result[0]), result[1]
 
 
     @staticmethod
