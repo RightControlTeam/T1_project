@@ -2,18 +2,17 @@ from fastapi import APIRouter, Depends, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 
-from . import schemas
-from core.database import get_db
-from .user import User
 from core.dependencies import get_current_user, get_current_admin, get_current_creator
+from core.database import get_db
+
 from security.token_service import TokenResponse
-from .admin_level import AdminLevel
-import logging
-from .user_service import UserService
 
-from .user_mapper import UserMapper
+from user_module import schemas
+from user_module.user import User
+from user_module.admin_level import AdminLevel
+from user_module.user_service import UserService
+from user_module.user_mapper import UserMapper
 
-logger = logging.getLogger(__name__)
 user_router = APIRouter(
     prefix = "/user",
     tags = ["user"],

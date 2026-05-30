@@ -10,6 +10,7 @@ import logging
 from user_module.user_router import user_router
 from resource.router import resource_router
 from booking.router import booking_router
+from booking.new_router import new_booking_router
 
 
 app: FastAPI = FastAPI()
@@ -36,6 +37,7 @@ logger = logging.getLogger("t1_project")
 app.include_router(user_router)
 app.include_router(resource_router)
 app.include_router(booking_router)
+app.include_router(new_booking_router)
 
 
 if __name__ == "__main__":

@@ -8,15 +8,15 @@ from core.dependencies import get_current_user
 
 from user_module.user import User
 from core.dependencies import get_db
-from booking_service import BookingService
+from booking.booking_service import BookingService
 
 
-booking_router = APIRouter(
+new_booking_router = APIRouter(
     prefix="/booking/v2",
     tags=["booking"]
 )
 
-@booking_router.post(
+@new_booking_router.post(
     "/",
     response_model=BookingOut,
     status_code=status.HTTP_201_CREATED
@@ -29,7 +29,7 @@ async def create_booking(
     return await BookingService.create(new_booking, user.id, db)
 
 
-@booking_router.get("/{booking_id}", response_model=BookingOut)
+@new_booking_router.get("/{booking_id}", response_model=BookingOut)
 async def get_booking(
     booking_id: int,
     db: AsyncSession = Depends(get_db)
@@ -37,7 +37,7 @@ async def get_booking(
     return await BookingService.get_by_id(booking_id, db)
 
 
-@booking_router.get("/", response_model=list[BookingOut])
+@new_booking_router.get("/", response_model=list[BookingOut])
 async def get_bookings(
     user_id: Optional[int] = Query(None),
     resource_id: Optional[int] = Query(None),
@@ -46,7 +46,7 @@ async def get_bookings(
     return await BookingService.get_all(db, user_id, resource_id)
 
 
-@booking_router.put("/{booking_id}", response_model=BookingOut)
+@new_booking_router.put("/{booking_id}", response_model=BookingOut)
 async def update_booking(
     booking_id: int,
     request: BookingRequest,
@@ -56,7 +56,7 @@ async def update_booking(
     return await BookingService.update(request, booking_id, user.id, db)
 
 
-@booking_router.delete(
+@new_booking_router.delete(
     "/{booking_id}",
     status_code=status.HTTP_204_NO_CONTENT
 )

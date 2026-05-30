@@ -1,8 +1,8 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
-from .user import User
-from .admin_level import AdminLevel
+from user_module.user import User
+from user_module.admin_level import AdminLevel
 
 
 class UserRepository:

@@ -3,16 +3,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from fastapi.security import OAuth2PasswordRequestForm
 
+from core.config import settings
+
 from security.password_service import PasswordService
 from security.token_service import generate_login_response, TokenResponse
-from .user import User
-from . import schemas
-from .admin_level import AdminLevel
-from .schemas import UserResponse, UserRequest, CreatorRequest
-from .user_mapper import UserMapper
-from .user_repository import UserRepository
-from core.config import settings
-from login_data_validator import LoginDataValidator
+
+from user_module.user import User
+from user_module.admin_level import AdminLevel
+from user_module.schemas import UserResponse, UserRequest, CreatorRequest
+from user_module.user_mapper import UserMapper
+from user_module.user_repository import UserRepository
+from user_module.login_data_validator import LoginDataValidator
 
 class UserService:
     @staticmethod
@@ -51,7 +52,7 @@ class UserService:
 
     @staticmethod
     async def create(
-            request: schemas.UserRequest,
+            request: UserRequest,
             db: AsyncSession,
             admin_level: int
     ) -> TokenResponse:
