@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator, field_serializer
 from datetime import datetime, timedelta
 from core.config import settings
 
-class BookingCreate(BaseModel):
+class BookingRequest(BaseModel):
     resource_id: int
     start_time: datetime
     end_time: datetime

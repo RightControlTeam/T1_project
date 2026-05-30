@@ -5,15 +5,14 @@ from sqlalchemy import select, and_
 
 from resource.models import ResourceSchedule, Resource
 from .models import Booking
-from .schemas import BookingCreate
 
 
 class BookingRepository:
     @staticmethod
-    async def check_for_overlaps(
+    async def check_no_overlaps(
             booking: Booking,
             db: AsyncSession,
-    ) -> None:
+    ) -> bool:
         query = select(Booking).where(
                 and_(
                     Booking.resource_id == booking.resource_id
@@ -28,14 +27,14 @@ class BookingRepository:
         if booking.id is not None:
             query = query.where(Booking.id != booking.id)
         result = await db.scalar(query)
-        return result is not None
+        return result is None
 
 
     @staticmethod
-    async def check_existing_resource(
-            booking: BookingCreate,
+    async def check_resource_exists(
+            booking: Booking,
             db: AsyncSession,
-    ) -> Optional[Resource]:
+    ) -> bool:
         result = await db.scalar(
             select(Resource).where(Resource.id == booking.resource_id)
         )
@@ -43,8 +42,8 @@ class BookingRepository:
 
 
     @staticmethod
-    async def check_schedulee(
-            booking: BookingCreate,
+    async def check_schedule_match(
+            booking: Booking,
             db: AsyncSession,
     ) -> bool:
         week_day: int = booking.start_time.weekday()
