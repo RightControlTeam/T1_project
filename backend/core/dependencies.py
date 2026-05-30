@@ -10,7 +10,7 @@ from security.token_service import decode_jwt, JWTPayload
 from user_module.user import User
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user_module/login/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login/")
 
 
 async def get_current_user(
