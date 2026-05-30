@@ -15,7 +15,7 @@ from user_module.user import User
 
 from resource.models import Resource
 
-from booking.models import Booking
+from booking.booking import Booking
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

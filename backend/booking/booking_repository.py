@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from resource.models import ResourceSchedule, Resource
-from booking.models import Booking
+from booking.booking import Booking
 
 
 class BookingRepository:

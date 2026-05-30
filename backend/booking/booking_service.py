@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from booking.models import Booking
+from booking.booking import Booking
 from booking.schemas import BookingRequest, BookingOut
 from booking.booking_mapper import BookingMapper
 from booking.booking_repository import BookingRepository

@@ -1,5 +1,5 @@
 from typing import Optional, Sequence
-from .models import Booking
+from .booking import Booking
 from .schemas import BookingRequest, BookingOut
 
 
