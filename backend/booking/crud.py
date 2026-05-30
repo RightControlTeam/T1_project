@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from resource.models import ResourceSchedule, Resource
-from .booking import Booking
-from .schemas import BookingRequest
+from booking.booking import Booking
+from booking.schemas import BookingRequest
 
 import logging
 

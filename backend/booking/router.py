@@ -9,7 +9,7 @@ from core.dependencies import get_current_user
 
 from user_module.user import User
 from core.dependencies import get_db
-from . import crud
+from booking import crud
 
 logger = logging.getLogger(__name__)
 booking_router = APIRouter(

@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
-from .booking import Booking
-from .schemas import BookingRequest, BookingOut
+from booking.booking import Booking
+from booking.schemas import BookingRequest, BookingOut
 
 
 class BookingMapper:
