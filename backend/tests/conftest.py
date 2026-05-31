@@ -7,14 +7,14 @@ from sqlalchemy.pool import NullPool
 
 from main import app
 from core.database import Base, get_db
-from user.models import User
-from user.crud import register_user
-from user.admin_level import AdminLevel
-from user.schemas import RegisterUser
+from user_module.user import User
+from user_module.crud import register_user
+from user_module.admin_level import AdminLevel
+from user_module.schemas import UserRequest
 from resource.models import Resource
 from resource.crud import create_resource
 from resource.schemas import ResourceCreate
-from user.crud import get_user_by_username
+from user_module.crud import get_user_by_username
 
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
 
@@ -81,8 +81,8 @@ async def client(db_session) -> AsyncGenerator:
 
 @pytest.fixture(scope="function")
 async def test_user(db_session) -> Tuple[User, str]:
-    user_data = RegisterUser(username="testuser", password="TestPass123")
-    # Передаем AdminLevel.user (это 0)
+    user_data = UserRequest(username="testuser", password="TestPass123")
+    # Передаем AdminLevel.user_module (это 0)
     token_response = await register_user(user_data, db_session, AdminLevel.user)
     user = await get_user_by_username("testuser", db_session)
     return user, token_response.access_token
@@ -90,7 +90,7 @@ async def test_user(db_session) -> Tuple[User, str]:
 
 @pytest.fixture(scope="function")
 async def test_admin(db_session) -> Tuple[User, str]:
-    admin_data = RegisterUser(username="adminuser", password="AdminPass123")
+    admin_data = UserRequest(username="adminuser", password="AdminPass123")
     # Передаем AdminLevel.admin (это 1)
     token_response = await register_user(admin_data, db_session, AdminLevel.admin)
     admin = await get_user_by_username("adminuser", db_session)

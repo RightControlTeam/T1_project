@@ -1,12 +1,11 @@
-#security/token.py
-
-
 from datetime import datetime, timedelta, UTC
 from jwt import encode, decode, PyJWTError
 from fastapi import HTTPException
 from pydantic import BaseModel
 
 from core.config import settings
+
+from user_module.user import User
 
 
 class JWTPayload(BaseModel):
@@ -20,13 +19,13 @@ class TokenResponse(BaseModel):
     admin_level: int
 
 
-def generate_login_response(user_id: int, admin_level: int) -> TokenResponse:
+def generate_login_response(user: User) -> TokenResponse:
     exp_time_delta: timedelta = timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     exp_time: datetime = datetime.now(UTC) + exp_time_delta
     exp_time_int: int = int(exp_time.timestamp())
 
     payload: JWTPayload = JWTPayload(
-        sub = str(user_id),
+        sub = str(user.id),
         exp = exp_time_int
     )
 
@@ -40,7 +39,7 @@ def generate_login_response(user_id: int, admin_level: int) -> TokenResponse:
         access_token= token,
         token_type = "Bearer",
         expires_in = settings.JWT_EXPIRE_MINUTES * 60,
-        admin_level = admin_level
+        admin_level = user.admin_level
     )
 
 

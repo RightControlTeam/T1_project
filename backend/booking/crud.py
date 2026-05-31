@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from resource.models import ResourceSchedule, Resource
-from .models import Booking
-from .schemas import BookingCreate
+from booking.booking import Booking
+from booking.schemas import BookingRequest
 
 import logging
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # region Checks
 
 async def check_time_overlap(
-        booking: BookingCreate,
+        booking: BookingRequest,
         db: AsyncSession,
         filter_id: int | None = None
 ) -> None:
@@ -44,7 +44,7 @@ async def check_time_overlap(
 
 
 async def check_existing_resource(
-        booking: BookingCreate,
+        booking: BookingRequest,
         db: AsyncSession,
 ) -> None:
     existing_resource = await db.scalar(
@@ -59,7 +59,7 @@ async def check_existing_resource(
 
 
 async def check_schedule(
-        booking: BookingCreate,
+        booking: BookingRequest,
         db: AsyncSession,
 ) -> None:
     week_day: int = booking.start_time.weekday()
@@ -106,7 +106,7 @@ async def get_booking_by_id(
 
 
 async def create_booking(
-        new_booking: BookingCreate,
+        new_booking: BookingRequest,
         user_id: int,
         db: AsyncSession
 ) -> Booking:
@@ -147,7 +147,7 @@ async def get_bookings(
 
 
 async def update_booking(
-        updated_booking: BookingCreate,
+        updated_booking: BookingRequest,
         booking_id: int,
         user_id: int,
         db: AsyncSession

@@ -6,7 +6,7 @@ async def test_profile_with_token(client: AsyncClient, test_user):
     """Получение профиля с токеном"""
     user, token = test_user
     response = await client.get(
-        "/user/profile/",
+        "/user_module/profile/",
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
@@ -16,7 +16,7 @@ async def test_profile_with_token(client: AsyncClient, test_user):
 @pytest.mark.asyncio
 async def test_profile_without_token(client: AsyncClient):
     """Получение профиля без токена"""
-    response = await client.get("/user/profile/")
+    response = await client.get("/user_module/profile/")
     assert response.status_code == 401
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ async def test_users_list(client: AsyncClient, test_user):
     """Получение списка пользователей"""
     user, token = test_user
     response = await client.get(
-        "/user/list/",
+        "/user_module/list/",
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
@@ -34,7 +34,7 @@ async def test_users_list(client: AsyncClient, test_user):
 async def test_get_profile_invalid_token(client: AsyncClient):
     """Тест получения профиля с невалидным токеном"""
     response = await client.get(
-        "/user/profile/",
+        "/user_module/profile/",
         headers={"Authorization": "Bearer invalid.token.here"}
     )
     assert response.status_code == 401

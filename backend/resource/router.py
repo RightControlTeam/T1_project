@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from core.database import get_db
 from core.dependencies import get_current_user
-from user.models import User
+from user_module.user import User
 from . import schemas, crud
 
 logger = logging.getLogger(__name__)
