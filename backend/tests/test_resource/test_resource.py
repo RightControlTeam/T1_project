@@ -40,6 +40,31 @@ async def test_get_resources(client: AsyncClient, test_user, test_resource):
     assert response.status_code == 200
     assert len(response.json()) >= 1
 
+
+@pytest.mark.asyncio
+async def test_get_resources_filter_by_type(client: AsyncClient, test_admin):
+    """Фильтр списка по type """
+    _, token = test_admin
+    headers = {"Authorization": f"Bearer {token}"}
+
+    await client.post(
+        "/resource/",
+        json={"name": "Room A", "type": "room", "is_active": True},
+        headers=headers,
+    )
+    await client.post(
+        "/resource/",
+        json={"name": "Projector", "type": "equipment", "is_active": True},
+        headers=headers,
+    )
+
+    response = await client.get("/resource/?type=room", headers=headers)
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) >= 1
+    assert all(item["type"] == "room" for item in items)
+
+
 @pytest.mark.asyncio
 async def test_get_resource_by_id(client: AsyncClient, test_user, test_resource):
     """Получение ресурса по ID"""
@@ -63,6 +88,49 @@ async def test_update_resource_admin(client: AsyncClient, test_admin, test_resou
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Name"
 
+
+@pytest.mark.asyncio
+async def test_update_resource_success(client: AsyncClient, test_admin, test_resource):
+    """Тест update"""
+    _, token = test_admin
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = await client.put(
+        f"/resource/{test_resource.id}",
+        json={
+            "name": "Room",
+            "description": "Updated description",
+            "type": "room",
+            "is_active": False,
+        },
+        headers=headers,
+    )
+    assert response.status_code == 200
+
+    get_response = await client.get(
+        f"/resource/{test_resource.id}",
+        headers=headers,
+    )
+    assert get_response.status_code == 200
+    data = get_response.json()
+    assert data["name"] == "Room"
+    assert data["description"] == "Updated description"
+    assert data["type"] == "room"
+    assert data["is_active"] is False
+
+
+@pytest.mark.asyncio
+async def test_update_resource_by_user(client: AsyncClient, test_user, test_resource):
+    """Обычный пользователь не может обновить ресурс"""
+    _, token = test_user
+    response = await client.put(
+        f"/resource/{test_resource.id}",
+        json={"name": "Hacked Name"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 403
+
+
 @pytest.mark.asyncio
 async def test_delete_resource_admin(client: AsyncClient, test_admin, test_resource):
     """Админ удаляет ресурс"""
@@ -72,6 +140,26 @@ async def test_delete_resource_admin(client: AsyncClient, test_admin, test_resou
         headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_delete_resource_not_found(client: AsyncClient, test_admin, test_resource):
+    """После удаления ресурс недоступен """
+    _, token = test_admin
+    headers = {"Authorization": f"Bearer {token}"}
+
+    delete_response = await client.delete(
+        f"/resource/{test_resource.id}",
+        headers=headers,
+    )
+    assert delete_response.status_code == 204
+
+    get_response = await client.get(
+        f"/resource/{test_resource.id}",
+        headers=headers,
+    )
+    assert get_response.status_code == 404
+
 
 @pytest.mark.asyncio
 async def test_get_nonexistent_resource(client: AsyncClient, test_user):
@@ -109,6 +197,17 @@ async def test_delete_nonexistent_resource(client: AsyncClient, test_admin):
     response = await client.delete(
         f"/resource/{non_existent_id}",
         headers={"Authorization": f"Bearer {token}"}
+    )
+    assert response.status_code == 404
+
+@pytest.mark.asyncio
+async def test_create_schedule_resource_not_found(client: AsyncClient, test_admin):
+    """Расписание для несуществующего ресурса"""
+    _, token = test_admin
+    response = await client.post(
+        "/resource/99999/schedule",
+        json={"day_of_week": 0, "start_time": "10:00:00", "end_time": "12:00:00"},
+        headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 404
 
