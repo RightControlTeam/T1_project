@@ -19,7 +19,7 @@ const valid_errors = ref({
     password: ''
 });
 
-const handleRegisterUser = () => {
+const handleRegister = () => {
   register(validate_form, '/user/register-user', form, error, valid_errors)
 }
 
@@ -41,12 +41,12 @@ const handleRegisterUser = () => {
                 <div class="group-input">
                     <label for="register">Логин</label>
                     <input id="register" v-model="form.username" placeholder="Придумайте логин">
-                    <p v-if="valid_errors.username" class="error">{{ valid_errors.username }}</p>
+                    <p v-if="valid_errors.username" class="error valid">{{ valid_errors.username }}</p>
                 </div>
                 <div class="group-input">
                     <label for="password">Пароль</label>
                     <input id="password" type="password" v-model="form.password" placeholder="Придумайте пароль">
-                    <p v-if="valid_errors.password" class="error">{{ valid_errors.password }}</p>
+                    <p v-if="valid_errors.password" class="error valid">{{ valid_errors.password }}</p>
                 </div>
                 <div class="group-input">
                 <button type="submit">Зарегистрироваться</button>
@@ -159,6 +159,11 @@ button {
     text-align: center;
     color: rgb(255, 0, 0);
     font-weight: 400;
+}
+
+.error.valid {
+    text-align: left;
+    padding-left: 8px;
 }
 
 .to-register {

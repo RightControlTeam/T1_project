@@ -56,7 +56,7 @@
         if (validate_form()) {
             try {
                 console.log('Отправляю')
-                const response = await api.post('/user/login', 
+                const response = await api.post('/user/login/', 
                                                 qs.stringify(form.value), 
                                                 {headers: 
                                                     {'Content-Type': 'application/x-www-form-urlencoded'}
@@ -227,6 +227,11 @@ button {
     text-align: center;
     color: rgb(255, 0, 0);
     font-weight: 400;
+}
+
+.error.valid {
+    text-align: left;
+    padding-left: 8px;
 }
 
 .to-register {
