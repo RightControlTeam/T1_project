@@ -16,7 +16,6 @@ import Header from './components/Header.vue'
     #app {
         padding: 40px 50px 0;       
         width: 100%
-
     }
 </style>
 
