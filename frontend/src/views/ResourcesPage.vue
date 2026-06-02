@@ -1,11 +1,14 @@
 <script setup>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { onMounted, ref, computed } from 'vue'
 import { useResourcesPage } from '../components/logic_resource_page.js'
 import deleteIcon from '@/components/icons/delete.svg'
 import editIcon from '@/components/icons/edit.svg'
 
 const route = useRoute()
+const router = useRouter()
+const selectedTypes = ref([])
+
 
 onMounted(async () => {
   await getResources()
@@ -19,8 +22,6 @@ onMounted(async () => {
     }
   }
 })
-
-const selectedTypes = ref([])
 
 const {
   resources,
@@ -56,10 +57,20 @@ const {
   onDateChange,
   bookResource,
   deleteResource,
+  editResource,
   getSlotClass,
   findSlotIndexByTime
 } = useResourcesPage()
 
+async function handleEditResource(resourceId) {
+  const shouldEdit = await editResource(resourceId)
+  if (shouldEdit) {
+    router.push({
+      path: '/create_resource',
+      query: { resourceId: resourceId }
+    })
+  }
+}
 
 const filteredResources = computed(() => {
   if (selectedTypes.value.length === 0) return resources.value
@@ -121,7 +132,7 @@ const filteredResources = computed(() => {
           <button class="book-btn" @click="openModal(resource)">
             Забронировать
           </button>
-          <button v-if="admin_level === '1'" class="icon-btn" title="Редактировать">
+          <button v-if="admin_level === '1'" class="icon-btn" @click="handleEditResource(resource.id)" title="Редактировать">
             <img :src="editIcon" alt="edit">
           </button>
         </div>

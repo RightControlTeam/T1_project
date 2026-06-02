@@ -678,6 +678,17 @@ export function useResourcesPage() {
     }
   }
 
+ async function editResource(resourceId) {
+    try {
+      sessionStorage.setItem('editingResourceId', resourceId)
+      return true
+    } catch (e) {
+      console.error(e)
+      alert('Ошибка при подготовке к редактированию')
+      return false
+    }
+  }
+
 
   // ЖИЗНЕННЫЙ ЦИКЛ
 
@@ -730,6 +741,7 @@ export function useResourcesPage() {
     onDateChange,
     bookResource,
     deleteResource,
+    editResource,
     getSlotClass,
     findSlotIndexByTime
   }
