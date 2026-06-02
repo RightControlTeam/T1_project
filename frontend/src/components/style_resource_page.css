@@ -1,5 +1,7 @@
 .resources-container {
-  margin: 0 auto;
+  display: flex;
+  gap: 16px;
+  margin: 16px auto;
 }
 
 h1 {
@@ -102,7 +104,6 @@ h1 {
 }
 
 .card-description {
-    margin: 12px 0;
     flex: 1;
 }
 
@@ -118,9 +119,9 @@ h1 {
   color: #505050;
   margin: 4px 0 0;
   line-height: 1.4;
-  height: 69px;
+  height: 54px;
 
-  word-break: break-word;     /* Принудительный перенос длинных слов */
+  word-break: break-word;
   overflow-wrap: break-word;
 }
 

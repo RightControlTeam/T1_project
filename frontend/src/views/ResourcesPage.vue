@@ -7,7 +7,9 @@ import editIcon from '@/components/icons/edit.svg'
 
 const route = useRoute()
 const router = useRouter()
+
 const selectedTypes = ref([])
+const searchQuery = ref('')
 
 
 onMounted(async () => {
@@ -72,9 +74,23 @@ async function handleEditResource(resourceId) {
   }
 }
 
+
 const filteredResources = computed(() => {
-  if (selectedTypes.value.length === 0) return resources.value
-  return resources.value.filter(resource => selectedTypes.value.includes(resource.type))
+  let result = resources.value
+  
+  if (selectedTypes.value.length > 0) {
+    result = result.filter(resource => selectedTypes.value.includes(resource.type))
+  }
+  
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    result = result.filter(resource => 
+      resource.name.toLowerCase().includes(query) ||
+      (resource.description && resource.description.toLowerCase().includes(query))
+    )
+  }
+  
+  return result
 })
 
 </script>
@@ -94,24 +110,34 @@ const filteredResources = computed(() => {
   
   <!-- Список ресурсов -->
   <div v-else class="resources-container">
-    <h1>Доступные ресурсы</h1>
-    <div class="filters">
+    <div class="filters-block">
+      <div class="search-box">
+        <input 
+          type="text"
+          v-model="searchQuery" 
+          placeholder="Поиск ресурсов..." 
+          class="search-input"
+        >
+      </div>
+
+      <div class="filters">
+          <label>
+          <input type="checkbox" value="laptop" v-model="selectedTypes">
+          Ноутбук
+        </label>
         <label>
-        <input type="checkbox" value="laptop" v-model="selectedTypes">
-        Ноутбук
-      </label>
-      <label>
-        <input type="checkbox" value="room" v-model="selectedTypes">
-        Переговорная
-      </label>
-      <label>
-        <input type="checkbox" value="projector" v-model="selectedTypes">
-        Проектор
-      </label>
-      <label>
-        <input type="checkbox" value="other" v-model="selectedTypes">
-        Другое
-      </label>
+          <input type="checkbox" value="room" v-model="selectedTypes">
+          Переговорная
+        </label>
+        <label>
+          <input type="checkbox" value="projector" v-model="selectedTypes">
+          Проектор
+        </label>
+        <label>
+          <input type="checkbox" value="other" v-model="selectedTypes">
+          Другое
+        </label>
+      </div>
     </div>
     
     <div class="cards">
@@ -122,7 +148,7 @@ const filteredResources = computed(() => {
         
         <div class="card-description">
           <span class="label">Описание</span>
-          <p class="description-text">{{ truncate(resource.description, 100) }}</p>
+          <p class="description-text">{{ truncate(resource.description, 60) }}</p>
         </div>
         
         <div class="card-actions">
@@ -237,11 +263,68 @@ const filteredResources = computed(() => {
 <style src="../components/style_resource_page.css" scoped></style>
 
 <style scoped>
+.filters-block {
+  flex-shrink: 0;
+  width: 280px;
+  overflow-y: visible;
+}
+
+.search-box {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #E0E0E0;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s;
+  background: white;
+}
+
+.search-input:focus {
+  border-color: #5D20ED;
+  box-shadow: 0 2px 8px rgba(93, 32, 237, 0.041);
+}
+
 .filters {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 4px;
 }
 
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  accent-color: #5D20ED;
+}
+
+.filters input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: row;  /* На мобильных горизонтально */
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .filters label {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
 </style>
