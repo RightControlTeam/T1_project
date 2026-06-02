@@ -1,36 +1,38 @@
 import pytest
-import asyncio
 from typing import AsyncGenerator, Tuple
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.pool import NullPool
 
 from main import app
 from core.database import Base, get_db
-from user.models import User
-from user.crud import register_user
-from user.admin_level import AdminLevel
-from user.schemas import RegisterUser
 from resource.models import Resource
 from resource.crud import create_resource
 from resource.schemas import ResourceCreate
-from user.crud import get_user_by_username
 
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
+from user_module.user_repository import UserRepository
+from user_module.admin_level import AdminLevel
+from user_module.schemas import UserRequest, CreatorRequest
+from user_module.user import User
+from user_module.user_service import UserService
+from core.config import settings
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Создает один цикл событий на всю сессию тестов"""
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
-    yield loop
-    loop.close()
+# TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@postgres:5432/test_db"
+
+# @pytest.fixture(scope="session")
+# def event_loop():
+#     """Создает один цикл событий на всю сессию тестов"""
+#     policy = asyncio.get_event_loop_policy()
+#     loop = policy.new_event_loop()
+#     yield loop
+#     loop.close()
 
 
 @pytest.fixture(scope="session")
 async def engine():
-    """Создает движок и таблицы ("""
+    """Создает движок и таблицы """
     engine = create_async_engine(
         TEST_DATABASE_URL,
         echo=False,
@@ -47,23 +49,17 @@ async def engine():
 
 @pytest.fixture(scope="function")
 async def db_session(engine):
-    """ Обеспечивает изоляцию тестов"""
-
-    connection = await engine.connect()
-    transaction = await connection.begin()
-
-    async_session = async_sessionmaker(
-        connection,
-        expire_on_commit=False,
-        join_transaction_mode="create_savepoint"
-    )
-
-    async with async_session() as session:
-        yield session
-        await session.close()
-
-    await transaction.rollback()
-    await connection.close()
+    async with engine.connect() as connection:
+        transaction = await connection.begin()
+        session_factory = async_sessionmaker(
+            bind=connection,
+            expire_on_commit=False,
+            class_=AsyncSession,
+            join_transaction_mode="create_savepoint",
+        )
+        async with session_factory() as session:
+            yield session
+        await transaction.rollback()
 
 
 @pytest.fixture(scope="function")
@@ -81,21 +77,37 @@ async def client(db_session) -> AsyncGenerator:
 
 @pytest.fixture(scope="function")
 async def test_user(db_session) -> Tuple[User, str]:
-    user_data = RegisterUser(username="testuser", password="TestPass123")
-    # Передаем AdminLevel.user (это 0)
-    token_response = await register_user(user_data, db_session, AdminLevel.user)
-    user = await get_user_by_username("testuser", db_session)
+    user_data = UserRequest(username="testuser", password="TestPass123")
+    token_response = await  UserService.create(user_data, db_session,AdminLevel.user)
+    user = await UserRepository.get_by_username("testuser", db_session)
     return user, token_response.access_token
 
 
 @pytest.fixture(scope="function")
 async def test_admin(db_session) -> Tuple[User, str]:
-    admin_data = RegisterUser(username="adminuser", password="AdminPass123")
-    # Передаем AdminLevel.admin (это 1)
-    token_response = await register_user(admin_data, db_session, AdminLevel.admin)
-    admin = await get_user_by_username("adminuser", db_session)
+    admin_data = UserRequest(username="adminuser", password="AdminPass123")
+    token_response = await UserService.create(admin_data, db_session, AdminLevel.admin)
+    admin = await UserRepository.get_by_username("adminuser", db_session)
     return admin, token_response.access_token
 
+
+@pytest.fixture(scope="function")
+async def test_creator(db_session) -> Tuple[User, str]:
+    """Создает creator пользователя для тестов"""
+    creator_data = CreatorRequest(
+        username="creatoruser",
+        password="CreatorPass123",
+        creator_registration_key=settings.CREATOR_REGISTRATION_KEY
+    )
+    token_response = await UserService.create_creator(creator_data, db_session)
+    creator = await UserRepository.get_by_username("creatoruser", db_session)
+    return creator, token_response.access_token
+
+
+@pytest.fixture(scope="function")
+async def creator_token_headers(test_creator):
+    _, token = test_creator
+    return {"Authorization": f"Bearer {token}"}
 
 @pytest.fixture(scope="function")
 async def test_resource(db_session) -> Resource:

@@ -35,32 +35,46 @@ async def test_admin_creates_resource(client: AsyncClient, admin_token_headers):
     resource_id = response.json()["id"]
 
     schedule_data = {
-        "work_start": "09:00:00",
-        "work_end": "18:00:00"
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "18:00:00"
     }
     response = await client.post(f"/resource/{resource_id}/schedule", json=schedule_data, headers=admin_token_headers)
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["work_start"] == "09:00:00"
+    assert response.json()["start_time"] == "09:00:00"
+    assert response.json()["end_time"] == "18:00:00"
 
 
 @pytest.mark.asyncio
-async def test_booking_overlap_conflict(client: AsyncClient, user_token_headers, created_resource):
-    resource_id = created_resource["id"]
+async def test_booking_overlap_conflict(
+    client: AsyncClient,
+    user_token_headers,
+    created_resource,
+    admin_token_headers,
+):
+    resource_id = created_resource.id
+    # 2026-06-20 — суббота (day_of_week=5)
+    schedule = await client.post(
+        f"/resource/{resource_id}/schedule",
+        json={"day_of_week": 5, "start_time": "09:00:00", "end_time": "18:00:00"},
+        headers=admin_token_headers,
+    )
+    assert schedule.status_code == status.HTTP_201_CREATED
 
     booking_1 = {
         "resource_id": resource_id,
-        "start_time": "2026-05-20T10:00:00",
-        "end_time": "2026-05-20T12:00:00"
+        "start_time": "2026-06-20T10:00:00",
+        "end_time": "2026-06-20T12:00:00",
     }
     res1 = await client.post("/booking/", json=booking_1, headers=user_token_headers)
     assert res1.status_code == status.HTTP_201_CREATED
 
     booking_2 = {
         "resource_id": resource_id,
-        "start_time": "2026-05-20T11:00:00",
-        "end_time": "2026-05-20T13:00:00"
+        "start_time": "2026-06-20T11:00:00",
+        "end_time": "2026-06-20T13:00:00",
     }
     res2 = await client.post("/booking/", json=booking_2, headers=user_token_headers)
 
     assert res2.status_code == status.HTTP_409_CONFLICT
-    assert "already booked" in res2.json()["detail"]
+    assert "overlap" in res2.json()["detail"].lower()

@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from core.database import get_db
 from core.dependencies import get_current_user
-from user.models import User
+from user_module.user import User
 from . import schemas, crud
 
 logger = logging.getLogger(__name__)
@@ -73,10 +73,11 @@ async def get_resource(resource_id: int, db: AsyncSession = Depends(get_db),curr
 async def get_resources(
     skip: int = 0,
     limit: int = 100,
+    type: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_current_user),
 ) -> List[schemas.ResourceOut]:
-    return await crud.get_resources(db, skip=skip, limit=limit)
+    return await crud.get_resources(db, skip=skip, limit=limit, type=type)
 
 
 @resource_router.put(
