@@ -2,7 +2,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import api from '@/api/index'
 
 export function useResourcesPage() {
-
+  const MSK_OFFSET_HOURS = 3
   const SLOT_INTERVAL_MINUTES = 30
   // Список всех ресурсов, полученных с сервера
   const resources = ref([])
@@ -385,17 +385,16 @@ export function useResourcesPage() {
     return false
   }
 
-  //получение московского времени
-  function getMoscowNow() {
-    return new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' })
-  }
-
   function isTimeInPast(dateString, timeString) {
-    const moscowNow = getMoscowNow()
+    const nowMSK = Date.now() + (MSK_OFFSET_HOURS * 60 * 60 * 1000)
+    
     const [year, month, day] = dateString.split('-').map(Number)
     const [hours, minutes] = timeString.split(':').map(Number)
-    const slotDate = new Date(year, month - 1, day, hours, minutes)
-    return slotDate < moscowNow
+    
+    const slotTimestamp = new Date(year, month - 1, day, hours, minutes).getTime()
+    const slotTimestampMSK = slotTimestamp + (MSK_OFFSET_HOURS * 60 * 60 * 1000)
+    
+    return slotTimestampMSK < nowMSK
   }
 
   // Проверяет, доступен ли слот для выбора (не в прошлом)
