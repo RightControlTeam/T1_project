@@ -187,11 +187,12 @@ async def cancel_booking(
         booking_id: int,
         user_id: int,
         db: AsyncSession,
+        is_admin: bool = False,
 ) -> None:
     logger.info(f"User {user_id} is cancelling Booking ID {booking_id}")
     existing_booking = await check_and_find_existing_booking(booking_id, db)
 
-    if user_id != existing_booking.user_id:
+    if not is_admin and user_id != existing_booking.user_id:
         logger.error(f"Permission denied: User {user_id} tried to cancel User {existing_booking.user_id}'s booking")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

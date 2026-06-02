@@ -31,10 +31,12 @@ async def create_resource(db: AsyncSession,resource_data: schemas.ResourceCreate
 
     return db_resource
 
-async def get_resources(db: AsyncSession,  skip: int = 0,  limit: int = 100, type: Optional[str] = None) -> List[Resource]:
+async def get_resources(db: AsyncSession,  skip: int = 0,  limit: int = 100, type: Optional[str] = None, name: Optional[str] = None) -> List[Resource]:
     query = select(Resource).options(selectinload(Resource.schedules))
     if type:
            query = query.where(Resource.type == type)
+    if name:
+        query = query.where(Resource.name.ilike(f"%{name}%"))
     query = query.offset(skip).limit(limit)
     result = await db.execute(query.execution_options(populate_existing=True))
     return result.scalars().all()
