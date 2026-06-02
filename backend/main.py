@@ -1,5 +1,6 @@
 #main.py
 
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,13 +8,20 @@ from uvicorn import run
 
 import logging
 
+from core.schema_bootstrap import ensure_schema
 from user_module.user_router import user_router
 from resource.router import resource_router
 from booking.router import booking_router
 from booking.new_router import new_booking_router
 
 
-app: FastAPI = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await ensure_schema()
+    yield
+
+
+app: FastAPI = FastAPI(lifespan=lifespan)
 
 
 app.add_middleware(
