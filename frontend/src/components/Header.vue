@@ -33,9 +33,14 @@
         
         if (admin_level.value === '1') {
             base.push({
+                path: '/all_bookings',
+                title: 'Все брони',
+                icon: calendarIcon,
+            },
+            {
                 path: '/create_resource',
                 title: 'Создать',
-                icon: addIcon
+                icon: addIcon,
             })
         }
         

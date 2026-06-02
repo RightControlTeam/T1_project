@@ -68,7 +68,10 @@ async function get_bookings() {
     const response = await api.get('/booking/', {
             params: { user_id: user_id }
         })
-    bookings.value = response.data
+    const sortedBookings = response.data.sort((a, b) => 
+      new Date(a.start_time) - new Date(b.start_time)
+    );
+    bookings.value = sortedBookings
     bookings.value.forEach((booking, index) => {
         bookings.value[index].start_time = formatToMoscow(booking.start_time)
         bookings.value[index].end_time = formatToMoscow(booking.end_time)

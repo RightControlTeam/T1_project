@@ -6,6 +6,7 @@ import BookingsPage from '../views/BookingsPage.vue'
 import CreateResourcePage from '../views/CreateResourcePage.vue'
 import CreateAdminPage from '../views/CreateAdminPage.vue'
 import AdminListPage from '../views/AdminListPage.vue'
+import AllBookingsPage from '../views/AllBookingsPage.vue'
 
 const router = createRouter({
     history: createWebHistory(),
@@ -44,6 +45,15 @@ const router = createRouter({
             }
         },
         {
+            path: '/all_bookings',
+            name: 'all_bookings',
+            component: AllBookingsPage,
+            meta: {
+                requires_auth: true,
+                admin_only: true
+            }
+        },
+        {
             path: '/create_admin',
             name: 'create_admin',
             component: CreateAdminPage,
@@ -61,7 +71,6 @@ const router = createRouter({
                 creator_only: true
             }
         },
-        // добавить просмотр админов и удаление
     ]
 })
 
@@ -78,7 +87,6 @@ router.beforeEach((to, from) => {
     } else if (to.meta.admin_only && admin_level !== '1') {
         return { name: 'home' }
     }
-    // Придумать что-то с superuser
     return true
 })
 
