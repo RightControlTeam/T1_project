@@ -4,6 +4,7 @@ import api from '@/api/index'
 export function useResourcesPage() {
   const MSK_OFFSET_HOURS = 3
   const SLOT_INTERVAL_MINUTES = 30
+  const slotsCache = new Map()
   // Список всех ресурсов, полученных с сервера
   const resources = ref([])
   // Сообщение об ошибке для отображения в интерфейсе
@@ -125,7 +126,7 @@ export function useResourcesPage() {
   }
 
   // Создает массив временных слотов с учетом рабочих интервалов и перерывов
-  function getTimeSlotsWithBreaks(date) {
+  function computeTimeSlotsWithBreaks(date) {
     const schedules = findIntervals(date)
     const breaks = findBreaks(date)
     
@@ -177,6 +178,20 @@ export function useResourcesPage() {
     return allItems
   }
 
+  function getTimeSlotsWithBreaks(date) {
+    if (!selectedResource.value) return []
+    
+    const cacheKey = `${selectedResource.value.id}_${date}`
+    
+    if (slotsCache.has(cacheKey)) {
+        return slotsCache.get(cacheKey)
+    }
+    
+    const result = computeTimeSlotsWithBreaks(date)
+    slotsCache.set(cacheKey, result)
+    
+    return result
+  }
 
   // ЗАГРУЗКА БРОНЕЙ
   function formatToMoscow(utc_time) {
@@ -314,6 +329,9 @@ export function useResourcesPage() {
     selectedDate.value = ''
     resetSelection()
 
+    slotsCache.clear()
+    console.log('Кеш очищен')
+
     if (window.bookingRefreshInterval) {
       clearInterval(window.bookingRefreshInterval)
       window.bookingRefreshInterval = null
@@ -386,15 +404,14 @@ export function useResourcesPage() {
   }
 
   function isTimeInPast(dateString, timeString) {
-    const nowMSK = Date.now() + (MSK_OFFSET_HOURS * 60 * 60 * 1000)
-    
-    const [year, month, day] = dateString.split('-').map(Number)
-    const [hours, minutes] = timeString.split(':').map(Number)
-    
-    const slotTimestamp = new Date(year, month - 1, day, hours, minutes).getTime()
-    const slotTimestampMSK = slotTimestamp + (MSK_OFFSET_HOURS * 60 * 60 * 1000)
-    
-    return slotTimestampMSK < nowMSK
+      const nowUTC = Date.now()
+      
+      const [year, month, day] = dateString.split('-').map(Number)
+      const [hours, minutes] = timeString.split(':').map(Number)
+      
+      const slotUTC = Date.UTC(year, month - 1, day, hours - MSK_OFFSET_HOURS, minutes)
+      
+      return slotUTC < nowUTC
   }
 
   // Проверяет, доступен ли слот для выбора (не в прошлом)
