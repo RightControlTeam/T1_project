@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_resource_id'), 'resource', ['id'], unique=False)
-    op.create_table('user_module',
+    op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('password_hash', sa.String(length=60), nullable=False),
@@ -38,8 +38,8 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_user_id'), 'user_module', ['id'], unique=False)
-    op.create_index('uq_active_username', 'user_module', ['username'], unique=True, postgresql_where='is_active = true')
+    op.create_index(op.f('ix_user_id'), 'user', ['id'], unique=False)
+    op.create_index('uq_active_username', 'user', ['username'], unique=True, postgresql_where='is_active = true')
     op.create_table('booking',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -48,7 +48,7 @@ def upgrade() -> None:
     sa.Column('end_time', sa.DateTime(timezone=True), nullable=False),
     sa.Column('is_cancelled', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['resource_id'], ['resource.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['user_id'], ['user_module.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_booking_id'), 'booking', ['id'], unique=False)
@@ -72,9 +72,9 @@ def downgrade() -> None:
     op.drop_table('resource_schedule')
     op.drop_index(op.f('ix_booking_id'), table_name='booking')
     op.drop_table('booking')
-    op.drop_index('uq_active_username', table_name='user_module', postgresql_where='is_active = true')
-    op.drop_index(op.f('ix_user_id'), table_name='user_module')
-    op.drop_table('user_module')
+    op.drop_index('uq_active_username', table_name='user', postgresql_where='is_active = true')
+    op.drop_index(op.f('ix_user_id'), table_name='user')
+    op.drop_table('user')
     op.drop_index(op.f('ix_resource_id'), table_name='resource')
     op.drop_table('resource')
     # ### end Alembic commands ###
