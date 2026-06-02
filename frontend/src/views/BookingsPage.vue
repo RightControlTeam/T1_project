@@ -1,15 +1,26 @@
 <script setup>
 import api from '@/api/index'
 import { useRouter } from 'vue-router'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import timeIcon from '@/components/icons/time.svg'
 import calendar2Icon from '@/components/icons/calendar2.svg'
 
 const bookings = ref([])
 const currentUserId = ref(null)
 const is_loading = ref(true)
-
+const today = ref('')
 const router = useRouter() 
+let interval = null
+
+const update = () => {
+  const now = new Date()
+  const day = String(now.getDate()).padStart(2, '0')
+  today.value = day
+}
+
+const is_today = (booking_day) => {
+  return booking_day === today.value
+}
 
 async function editBooking(booking) {
   const confirmed = confirm('Изменить бронирование? Старое будет удалено.')
@@ -99,7 +110,7 @@ async function delete_booking(booking_id) {
 
 const activeBookings = computed(() => {
   return bookings.value
-    .filter(booking => !booking.is_cancelled)
+    .filter(booking => !booking.is_cancelled && !booking.is_ended)
     .map(booking => ({
       ...booking,
       resource: booking.resource
@@ -111,7 +122,14 @@ onMounted(async () => {
   await get_bookings()
   is_loading.value = false
   console.log(bookings.value)
+  update()
+  interval = setInterval(update, 60000)
 })
+
+onUnmounted(() => {
+  if (interval) clearInterval(interval)
+})
+
 </script>
 
 <template>
@@ -121,17 +139,22 @@ onMounted(async () => {
       Загрузка...
     </div>
     <div v-else class="cards">
-      <div v-for="(booking, index) in activeBookings" :key="index">
-        <div class="card">
+      <div v-for="(booking, index) in activeBookings " :key="index">
+        <div class="card_book">
           <h3>{{ booking.resource?.name }}</h3>
           <div>
             <span class="description">Описание:</span>
             <p>{{ booking.resource?.description }}</p>
           </div>
           <div class="line"></div>
-          <div class="book-box">
-            <div class="circle"></div>
-            <span class="book">Забронировано</span>
+          <div class="mark">
+            <div class="book-box">
+              <div class="circle"></div>
+              <span class="book">Забронировано</span>
+            </div>
+            <div v-if="is_today(booking.start_time.split(' ')[0].split('.')[0])" class="today">
+              Сегодня
+            </div>
           </div>
           <div class="block">
             <img :src="timeIcon" alt="time">
@@ -153,6 +176,31 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.today {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 16px;
+  gap: 8px;
+  width: 90px;
+  height: 22px;
+  color: #66E66A;
+  border: 1px solid #66E66A;
+  border-radius: 20px;
+}
+
+.mark {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+h2 {
+  text-align: center;
+  margin-top: 16px;
+}
 input {
   padding: 6px 8px;
   width: 100px;
@@ -215,20 +263,20 @@ input {
 }
 
 .cards {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(340px, 1fr));
   gap: 16px;
   margin-top: 20px;
-  flex-wrap:wrap;
+  justify-content: center;
+  max-width: 100%;
 }
 
-.card{
+.card_book {
   display: flex;
   flex-direction:column;
   padding: 16px;
   box-shadow: 0 0 8px rgba(93, 32, 237, 0.2);
   border-radius: 16px;
-  width: 744px;
   gap: 8px;
 }
 
@@ -247,9 +295,10 @@ p {
 }
 
 .buttons {
-  padding: 0px 220px;
+  position: relative;
   display: flex;
   flex-direction: row;
+  gap: 12px;
 }
 
 button {
@@ -295,13 +344,23 @@ button {
 }
 
 .booking-page {
-  position: fixed;
-  height: 100vh;
-  overflow-y: auto; 
-  padding: 0px 4px;
+  position: relative;
+  margin: 0 auto;
   padding-bottom: 100px;
+  width: 100%;
 }
 
+@media (max-width: 1255px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(340px, 1fr));
+  }
+}
+
+@media (max-width: 890px) {
+  .cards {
+    grid-template-columns: repeat(1, minmax(340px, 1fr));
+  }
+}
 
 .error-state {
   text-align: center;

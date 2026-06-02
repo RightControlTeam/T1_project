@@ -6,8 +6,6 @@ import user from '@/components/icons/image.png'
 const admins = ref([])
 const page = ref(1)
 const total_pages = ref(3)
-// TODO: get total pages from backend
-// TODO: catch errors
 let limit = 10
 
 async function get_admins() {
@@ -24,6 +22,7 @@ async function get_admins() {
 }
 
 async function delete_admin(adminId) {
+  if (confirm('Вы уверены, что хотите удалить этого администратора?')) {
   try {
     const response = await api.delete(`/user/${adminId}`)
     console.log('success')
@@ -31,6 +30,13 @@ async function delete_admin(adminId) {
   }
   catch(e) {
     console.log(e)
+  }
+}
+}
+
+async function confirmDelete(adminId) {
+  if (confirm('Вы уверены, что хотите удалить этого администратора?')) {
+    await delete_admin(adminId)
   }
 }
 
@@ -64,7 +70,7 @@ onMounted(() => {
     <div class="admin_list" v-for="admin in admins" :key="admin.id">
       <img :src="user" wigth=24 height=24 alt="user">
       {{ admin.username }}
-      <button @click="delete_admin(admin.id)" class="delete">Удалить</button>
+      <button @click="confirmDelete(admin.id)" class="delete">Удалить</button>
     </div>
   </div>
 </template>

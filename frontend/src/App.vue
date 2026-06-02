@@ -14,8 +14,18 @@ import Header from './components/Header.vue'
 
 <style>
     #app {
-        padding: 40px 50px 0;       
-        width: 100%
+        padding: 40px 50px 0px;       
+        width: 100%;
+    }
+    @media (max-width: 650px) {
+        #app {
+            padding: 40px 20px 0px;
+        }
+    }   
+    @media (max-width: 420px) {
+        #app {
+            padding: 40px 10px 0px;
+        }
     }
 </style>
 

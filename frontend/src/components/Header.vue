@@ -93,6 +93,18 @@
         color: #505050
     }
 
+    @media (max-width: 650px) {
+        nav {
+            gap: 30px;
+            width: calc(100% - 100px);
+        }
+    }   
+     @media (max-width: 420px) {
+        nav {
+            gap: 20px;
+            width: calc(100% - 40px);
+        }
+    }  
     .menu.active span {
         color: #5D20ED;
     }
