@@ -13,7 +13,7 @@ api.interceptors.request.use(config => {
 })
 
 api.interceptors.response.use(
-    response => response,  // успех — просто возвращаем
+    response => response,
     error => {
         // Если токен истёк (401)
         if (error.response?.status === 401) {

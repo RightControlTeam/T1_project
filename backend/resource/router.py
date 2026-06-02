@@ -74,10 +74,11 @@ async def get_resources(
     skip: int = 0,
     limit: int = 100,
     type: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> List[schemas.ResourceOut]:
-    return await crud.get_resources(db, skip=skip, limit=limit, type=type)
+    return await crud.get_resources(db, skip=skip, limit=limit, type=type, name=name)
 
 
 @resource_router.put(

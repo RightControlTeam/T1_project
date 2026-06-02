@@ -10,6 +10,7 @@ from core.dependencies import get_current_user
 from user_module.user import User
 from core.dependencies import get_db
 from booking import crud
+from user_module.admin_level import AdminLevel
 
 logger = logging.getLogger(__name__)
 booking_router = APIRouter(
@@ -65,7 +66,8 @@ async def cancel_booking(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ) -> None:
+    is_admin = user.admin_level >= AdminLevel.admin
     logger.info(f"User {user.username} (ID: {user.id}) is cancelling booking ID: {booking_id}")
-    await crud.cancel_booking(booking_id, user.id, db)
+    await crud.cancel_booking(booking_id, user.id, db, is_admin=is_admin)
 
 

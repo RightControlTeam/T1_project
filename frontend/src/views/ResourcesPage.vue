@@ -1,29 +1,13 @@
 <script setup>
-import { useRoute } from 'vue-router'
-import { onMounted, ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useResourcesPage } from '../components/logic_resource_page.js'
 import deleteIcon from '@/components/icons/delete.svg'
 import editIcon from '@/components/icons/edit.svg'
 
 const route = useRoute()
-
-onMounted(async () => {
-  await getResources()
-  
-  // Если есть параметр book - открываем модалку
-  const resourceId = route.query.book
-  if (resourceId) {
-    const resource = resources.value.find(r => r.id == resourceId)
-    if (resource) {
-      openModal(resource)
-    }
-  }
-})
-
-const selectedTypes = ref([])
+const router = useRouter()
 
 const {
-  resources,
   error,
   loading,
   admin_level,
@@ -33,16 +17,12 @@ const {
   selectedDate,
   selectedStart,
   selectedEnd,
-  hoverEnd,
   errorMessage,
-  bookedSlots,
   minDate,
   maxDate,
   timeSlotsWithBreaks,
-  breaks,
   canBook,
   totalBookingTime,
-  getResources,
   truncate,
   openModal,
   closeModal,
@@ -51,85 +31,109 @@ const {
   handleSlotMouseEnter,
   handleGridMouseLeave,
   showBreakWarning,
-  resetSelection,
   cancelSelection,
   onDateChange,
   bookResource,
   deleteResource,
   getSlotClass,
-  findSlotIndexByTime
-} = useResourcesPage()
-
-
-const filteredResources = computed(() => {
-  if (selectedTypes.value.length === 0) return resources.value
-  return resources.value.filter(resource => selectedTypes.value.includes(resource.type))
-})
-
+  selectedTypes,
+  searchQuery,
+  currentPage,
+  totalPages,
+  paginatedResources,
+  goToPage,
+  nextPage,
+  prevPage,
+  getVisiblePages,
+  handleEditResource
+} = useResourcesPage(route, router)
 </script>
 
 <template>
-  <!-- Состояние загрузки -->
   <div v-if="loading" class="loading">
     <div class="spinner"></div>
     <p>Загрузка ресурсов...</p>
   </div>
   
-  <!-- Сообщение об ошибке -->
   <div v-else-if="error" class="error-state">
     <p>{{ error }}</p>
     <button @click="getResources">Попробовать снова</button>
   </div>
   
-  <!-- Список ресурсов -->
   <div v-else class="resources-container">
-    <h1>Доступные ресурсы</h1>
-    <div class="filters">
+    <div class="filters-block">
+      <div class="search-box">
+        <input 
+          type="text"
+          v-model="searchQuery" 
+          placeholder="Поиск ресурсов..." 
+          class="search-input"
+        >
+      </div>
+
+      <div class="filters">
         <label>
-        <input type="checkbox" value="laptop" v-model="selectedTypes">
-        Ноутбук
-      </label>
-      <label>
-        <input type="checkbox" value="room" v-model="selectedTypes">
-        Переговорная
-      </label>
-      <label>
-        <input type="checkbox" value="projector" v-model="selectedTypes">
-        Проектор
-      </label>
-      <label>
-        <input type="checkbox" value="other" v-model="selectedTypes">
-        Другое
-      </label>
+          <input type="checkbox" value="laptop" v-model="selectedTypes">
+          Ноутбук
+        </label>
+        <label>
+          <input type="checkbox" value="room" v-model="selectedTypes">
+          Переговорная
+        </label>
+        <label>
+          <input type="checkbox" value="projector" v-model="selectedTypes">
+          Проектор
+        </label>
+        <label>
+          <input type="checkbox" value="other" v-model="selectedTypes">
+          Другое
+        </label>
+      </div>
     </div>
     
-    <div class="cards">
-      <div v-for="resource in filteredResources" :key="resource.id" class="card">
-        <div class="card-header">
-          <h3 class="card-title">{{ resource.name }}</h3>
+    <div class="cards-block">
+      <div class="cards">
+        <div v-for="resource in paginatedResources" :key="resource.id" class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ resource.name }}</h3>
+          </div>
+          
+          <div class="card-description">
+            <span class="label">Описание</span>
+            <p class="description-text">{{ truncate(resource.description, 60) }}</p>
+          </div>
+          
+          <div class="card-actions">
+            <button v-if="admin_level === '1'" class="icon-btn" @click="deleteResource(resource.id)" title="Удалить">
+              <img :src="deleteIcon" alt="delete">
+            </button>
+            <button class="book-btn" @click="openModal(resource)">
+              Забронировать
+            </button>
+            <button v-if="admin_level === '1'" class="icon-btn" @click="handleEditResource(resource.id)" title="Редактировать">
+              <img :src="editIcon" alt="edit">
+            </button>
+          </div>
         </div>
-        
-        <div class="card-description">
-          <span class="label">Описание</span>
-          <p class="description-text">{{ truncate(resource.description, 100) }}</p>
-        </div>
-        
-        <div class="card-actions">
-          <button v-if="admin_level === '1'" class="icon-btn" @click="deleteResource(resource.id)" title="Удалить">
-            <img :src="deleteIcon" alt="delete">
+      </div>
+
+      <div v-if="totalPages > 1" class="pagination">
+        <button class="page-btn" @click="prevPage" :disabled="currentPage === 1">←</button>
+          
+        <div v-for="page in getVisiblePages()" :key="page">
+          <button v-if="page === '...'" class="page-dots" disabled>
+            ...
           </button>
-          <button class="book-btn" @click="openModal(resource)">
-            Забронировать
-          </button>
-          <button v-if="admin_level === '1'" class="icon-btn" title="Редактировать">
-            <img :src="editIcon" alt="edit">
+          <button v-else class="page-btn" :class="{ active: currentPage === page }" @click="goToPage(page)">
+            {{ page }}
           </button>
         </div>
+          
+        <button class="page-btn" @click="nextPage" :disabled="currentPage === totalPages">→</button>
       </div>
     </div>
   </div>
 
-  <!-- Модальное окно бронирования -->
   <div v-if="showModal" class="modal-overlay" @click="closeModal">
     <div class="modal" @click.stop>
       <div class="modal-header">
@@ -155,7 +159,6 @@ const filteredResources = computed(() => {
             @change="onDateChange">
         </div>
         
-        <!-- Сетка времени -->
         <div v-if="selectedDate && timeSlotsWithBreaks.length > 0" class="time-section">
           <div class="time-title">Выберите время:</div>
           <div class="time-grid" @mouseleave="handleGridMouseLeave">
@@ -169,8 +172,7 @@ const filteredResources = computed(() => {
                 'slot-start': !item.isBreak && getSlotClass(idx)['slot-start'],
                 'slot-end': !item.isBreak && getSlotClass(idx)['slot-end'],
                 'slot-preview': !item.isBreak && getSlotClass(idx)['slot-preview'],
-                'slot-disabled': !item.isBreak && getSlotClass(idx)['slot-disabled'],
-                'slot-completely-disabled': !item.isBreak && getSlotClass(idx)['slot-completely-disabled']
+                'slot-disabled': !item.isBreak && getSlotClass(idx)['slot-disabled']
               }"
               @click="item.isBreak ? showBreakWarning(item) : handleSlotClick(idx)"
               @mouseenter="!item.isBreak && handleSlotMouseEnter(idx)"
@@ -189,12 +191,10 @@ const filteredResources = computed(() => {
           В выбранный день ресурс не работает
         </div>
         
-        <!-- Сообщение об ошибке -->
         <div v-if="errorMessage" class="error-message">
           {{ errorMessage }}
         </div>
         
-        <!-- Выбранные интервалы -->
         <div v-if="bookingIntervals.length > 0" class="selected-intervals">
           <div class="selected-title">Выбранные интервалы ({{ totalBookingTime }}):</div>
           <div class="intervals-list">
@@ -205,7 +205,6 @@ const filteredResources = computed(() => {
           </div>
         </div>
 
-        <!-- Подсказка по выделению -->
         <div class="selection-hint" v-if="selectedStart !== null && selectedEnd === null">
           Нажмите на конечную ячейку для завершения выделения
           <button class="cancel-selection" @click="cancelSelection" type="button">
@@ -224,13 +223,3 @@ const filteredResources = computed(() => {
 </template>
 
 <style src="../components/style_resource_page.css" scoped></style>
-
-<style scoped>
-.filters {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-</style>

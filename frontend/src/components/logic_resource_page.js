@@ -1,54 +1,40 @@
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import api from '@/api/index'
 
-export function useResourcesPage() {
-
-  // Список всех ресурсов, полученных с сервера
+export function useResourcesPage(route, router) {
+  const MSK_OFFSET_HOURS = 3
+  const SLOT_INTERVAL_MINUTES = 30
+  const slotsCache = new Map()
+  
   const resources = ref([])
-  // Сообщение об ошибке для отображения в интерфейсе
   const error = ref('')
-  // Флаг загрузки данных
   const loading = ref(true)
-  // Уровень администратора из localStorage
   const admin_level = ref(localStorage.getItem('admin_level'))
 
-  // Состояние модального окна бронирования
   const showModal = ref(false)
-  // Выбранный для бронирования ресурс
   const selectedResource = ref(null)
-
-  // Выбранные интервалы бронирования
   const bookingIntervals = ref([])
 
-  // Состояние выбора времени в модальном окне
   const selectedDate = ref('')
   const selectedStart = ref(null)
   const selectedEnd = ref(null)
   const hoverEnd = ref(null)
   const errorMessage = ref('')
-
-  // Список уже забронированных слотов дня
   const bookedSlots = ref([])
 
+  const selectedTypes = ref([])
+  const searchQuery = ref('')
+  const currentPage = ref(1)
+  const itemsPerPage = ref(12)
 
-  // ЗАГРУЗКА ДАННЫХ
-
-  // Получение списка ресурсов из API, обработка ошибок
   async function getResources() {
     try {
       error.value = ''
+      loading.value = true
+      
       const request = await api.get('/resource')
-      resources.value = request.data.map(resource => {
-        resource.schedules.sort((a, b) => {
-          if (a.day_of_week !== b.day_of_week) {
-            return a.day_of_week - b.day_of_week
-          }
-
-          return a.start_time.localeCompare(b.start_time)
-        })
-        return resource
-      })
-      console.log(request.data)
+      resources.value = request.data.items || request.data
+      
     } catch (e) {
       error.value = e.response?.data?.detail || 'Ошибка загрузки ресурсов'
     } finally {
@@ -56,33 +42,23 @@ export function useResourcesPage() {
     }
   }
 
-  // Первоначальная загрузка данных при монтировании компонента
-  onMounted(getResources)
-
-
-  // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-
-  // Обрезает строку до заданной длины с добавлением многоточия
   function truncate(str, maxLength) {
     if (!str) return 'Нет описания'
     if (str.length <= maxLength) return str
     return str.slice(0, maxLength) + '...'
   }
 
-  // Возвращает индекс дня недели (0 = понедельник, 6 = воскресенье)
   function getDayOfWeek(date) {
     const dateObj = new Date(date)
     const dayOfWeek = dateObj.getDay()
     return dayOfWeek === 0 ? 6 : dayOfWeek - 1
   }
 
-  // Удаляет миллисекунды из строки времени
   function cleanTimeString(timeStr) {
     if (!timeStr) return ''
     return timeStr.split('.')[0]
   }
 
-  // Форматирует объект даты в строку YYYY-MM-DD
   function formatDate(date) {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -90,10 +66,6 @@ export function useResourcesPage() {
     return `${year}-${month}-${day}`
   }
 
-
-  // РАБОТА С РАСПИСАНИЕМ
-
-  // Находит временные интервалы работы ресурса для выбранной даты
   function findIntervals(date) {
     const dayIndex = getDayOfWeek(date)
     return selectedResource.value?.schedules.filter(
@@ -105,7 +77,6 @@ export function useResourcesPage() {
     })) || []
   }
 
-  // Вычисляет перерывы между временными интервалами работы ресурса
   function findBreaks(date) {
     const schedules = findIntervals(date)
     const breaks = []
@@ -123,8 +94,7 @@ export function useResourcesPage() {
     return breaks
   }
 
-  // Создает массив временных слотов с учетом рабочих интервалов и перерывов
-  function getTimeSlotsWithBreaks(date) {
+  function computeTimeSlotsWithBreaks(date) {
     const schedules = findIntervals(date)
     const breaks = findBreaks(date)
     
@@ -147,7 +117,18 @@ export function useResourcesPage() {
           time: `${hours}:${minutes}`,
           isBreak: false
         })
-        current.setMinutes(current.getMinutes() + 30)
+        current.setMinutes(current.getMinutes() + SLOT_INTERVAL_MINUTES)
+      }
+
+      const endHour = endTime.getHours()
+      const endMinute = endTime.getMinutes()
+
+      if (endHour === 23 && endMinute > 30) {
+        allItems.push({
+          type: 'slot',
+          time: '23:59',
+          isBreak: false
+        })
       }
       
       if (i < schedules.length - 1) {
@@ -165,87 +146,94 @@ export function useResourcesPage() {
     return allItems
   }
 
+  function getTimeSlotsWithBreaks(date) {
+    if (!selectedResource.value) return []
+    
+    const cacheKey = `${selectedResource.value.id}_${date}`
+    
+    if (slotsCache.has(cacheKey)) {
+      return slotsCache.get(cacheKey)
+    }
+    
+    const result = computeTimeSlotsWithBreaks(date)
+    slotsCache.set(cacheKey, result)
+    
+    return result
+  }
 
-  // ЗАГРУЗКА БРОНЕЙ
+  function formatToMoscow(utc_time) {
+    const date = new Date(utc_time)
+    return date.toLocaleString('ru-RU', {
+      timeZone: 'Europe/Moscow',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
 
-  // Загружает существующие бронирования для ресурса на выбранную дату
   async function loadBookedSlots(date, resourceId) {
     try {
-      console.log('получаем текущие брони')
       const response = await api.get(`/booking/?resource_id=${resourceId}`)
       const dateStr = typeof date === 'string' ? date : formatDate(date)
-      console.log('Брони получены', response)
+
       const filterBooking = response.data.filter(booking => {
-        const bookingDate = booking.start_time.split('T')[0]
-        return bookingDate === dateStr && !booking.is_cancelled
+        const bookingDate = new Date(booking.start_time)
+        const bookingDateMSK = new Date(bookingDate.toLocaleString('en-US', {
+          timeZone: 'Europe/Moscow'
+        }))
+        const bookingDateStr = formatDate(bookingDateMSK)
+        return bookingDateStr === dateStr && !booking.is_cancelled
       })
-      bookedSlots.value = filterBooking.map(booking => {
-        // Получаем UTC время
-        let utcStart = booking.start_time.split('T')[1]?.slice(0, 5) || ''
-        let utcEnd = booking.end_time.split('T')[1]?.slice(0, 5) || ''
-        
-        // Конвертируем в московское (прибавляем 3 часа)
-        /* const startHours = parseInt(utcStart.split(':')[0]) + 3
-        const endHours = parseInt(utcEnd.split(':')[0]) + 3
-        
-        const moscowStart = `${String(startHours).padStart(2, '0')}:${utcStart.split(':')[1]}`
-        const moscowEnd = `${String(endHours).padStart(2, '0')}:${utcEnd.split(':')[1]}` */
-        
-        return {
-          start: utcStart,
-          end: utcEnd
-        }
-      })
-      console.log('Брони', bookedSlots.value)
+      
+      bookedSlots.value = filterBooking.map(booking => ({
+        start: formatToMoscow(new Date(booking.start_time)),
+        end: formatToMoscow(new Date(booking.end_time))
+      }))
     } catch (e) {
       console.error('Ошибка загрузки броней:', e)
       bookedSlots.value = []
     }
   }
 
-  // Проверяет, занят ли временной слот существующими бронированиями
+  function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
   function isSlotBooked(slotTime) {
-    return bookedSlots.value.some(booking => {
-      return slotTime > booking.start && slotTime < booking.end
-    })
+    const slotMinutes = timeToMinutes(slotTime)
+    return bookedSlots.value.some(booking => 
+      slotMinutes > timeToMinutes(booking.start) && slotMinutes < timeToMinutes(booking.end)
+    )
   }
 
-  // Проверяет, входит ли слот в уже выбранные интервалы бронирования
   function isSlotInSelectedIntervals(slotTime) {
-    return bookingIntervals.value.some(interval => {
-      return slotTime > interval.start && slotTime < interval.end
-    })
+    const slotMinutes = timeToMinutes(slotTime)
+    return bookingIntervals.value.some(interval => 
+      slotMinutes > timeToMinutes(interval.start) && slotMinutes < timeToMinutes(interval.end)
+    )
   }
 
-
-  // ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
-  
-  // Минимальная доступная дата (сегодня)
   const minDate = computed(() => formatDate(new Date()))
 
-  // Максимальная дата бронирования (через 6 месяцев)
   const maxDate = computed(() => {
     const date = new Date()
     date.setMonth(date.getMonth() + 6)
     return formatDate(date)
   })
 
-  // Генерирует отображаемые временные слоты с перерывами для выбранной даты
   const timeSlotsWithBreaks = computed(() => {
     if (!selectedDate.value || !selectedResource.value) return []
     return getTimeSlotsWithBreaks(selectedDate.value)
   })
 
-  // Список перерывов для текущей даты и ресурса
   const breaks = computed(() => {
     if (!selectedDate.value || !selectedResource.value) return []
     return findBreaks(selectedDate.value)
   })
 
-  // Проверяет, можно ли выполнить бронирование (выбран хотя бы один интервал)
   const canBook = computed(() => bookingIntervals.value.length > 0)
 
-  // Вычисляет общую продолжительность выбранных интервалов бронирования
   const totalBookingTime = computed(() => {
     if (bookingIntervals.value.length === 0) return ''
     const totalMinutes = bookingIntervals.value.reduce((sum, interval) => {
@@ -259,10 +247,95 @@ export function useResourcesPage() {
     return hours > 0 ? `${hours} ч ${minutes} мин` : `${minutes} мин`
   })
 
+  const filteredResources = computed(() => {
+    let result = resources.value
+    
+    if (selectedTypes.value.length > 0) {
+      result = result.filter(resource => selectedTypes.value.includes(resource.type))
+    }
+    
+    if (searchQuery.value.trim()) {
+      const query = searchQuery.value.toLowerCase().trim()
+      result = result.filter(resource => 
+        resource.name.toLowerCase().includes(query) ||
+        (resource.description && resource.description.toLowerCase().includes(query))
+      )
+    }
+    
+    return result
+  })
 
-  // МОДАЛЬНОЕ ОКНО
+  const paginatedResources = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value
+    const end = start + itemsPerPage.value
+    return filteredResources.value.slice(start, end)
+  })
 
-  // Открывает модальное окно бронирования для выбранного ресурса
+  const totalPages = computed(() => Math.ceil(filteredResources.value.length / itemsPerPage.value))
+
+  function resetPage() {
+    currentPage.value = 1
+  }
+
+  function goToPage(page) {
+    if (page >= 1 && page <= totalPages.value) {
+      currentPage.value = page
+    }
+  }
+
+  function nextPage() {
+    if (currentPage.value < totalPages.value) {
+      currentPage.value++
+    }
+  }
+
+  function prevPage() {
+    if (currentPage.value > 1) {
+      currentPage.value--
+    }
+  }
+
+  function getVisiblePages() {
+    const delta = 2
+    const range = []
+    const rangeWithDots = []
+    let l
+
+    for (let i = 1; i <= totalPages.value; i++) {
+      if (i === 1 || i === totalPages.value || (i >= currentPage.value - delta && i <= currentPage.value + delta)) {
+        range.push(i)
+      }
+    }
+
+    range.forEach((i) => {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1)
+        } else if (i - l !== 1) {
+          rangeWithDots.push('...')
+        }
+      }
+      rangeWithDots.push(i)
+      l = i
+    })
+
+    return rangeWithDots
+  }
+
+  async function handleEditResource(resourceId) {
+    try {
+      const shouldEdit = await editResource(resourceId)
+      if (shouldEdit && router) {
+        router.push({
+          path: '/create_resource',
+          query: { resourceId: resourceId }
+        })
+      }
+    } catch (e) {
+      alert('Ошибка при подготовке к редактированию')
+    }
+  }
+
   async function openModal(resource) {
     selectedResource.value = resource
     showModal.value = true
@@ -277,15 +350,15 @@ export function useResourcesPage() {
       if (showModal.value && selectedDate.value && selectedResource.value) {
         await loadBookedSlots(selectedDate.value, selectedResource.value.id)
       }
-    }, 30000) 
+    }, 30000)
   }
 
-  // Закрывает модальное окно и сбрасывает все состояния
   function closeModal() {
     showModal.value = false
     selectedResource.value = null
     selectedDate.value = ''
     resetSelection()
+    slotsCache.clear()
 
     if (window.bookingRefreshInterval) {
       clearInterval(window.bookingRefreshInterval)
@@ -293,10 +366,6 @@ export function useResourcesPage() {
     }
   }
 
-
-  // ЛОГИКА ВЫБОРА ВРЕМЕНИ
-
-  // Проверяет пересечение выбранного диапазона с перерывами в работе ресурса
   function checkBreakOverlap(startIndex, endIndex) {
     if (!breaks.value.length) return false
     
@@ -306,11 +375,11 @@ export function useResourcesPage() {
     if (!startItem || startItem.isBreak) return false
     if (!endItem || endItem.isBreak) return false
     
-    const startTime = startItem.time
-    const endTime = endItem.time
+    const startTime = timeToMinutes(startItem.time)
+    const endTime = timeToMinutes(endItem.time)
     
     for (const breakItem of breaks.value) {
-      if (startTime < breakItem.end && endTime > breakItem.start) {
+      if (startTime < timeToMinutes(breakItem.end) && endTime > timeToMinutes(breakItem.start)) {
         errorMessage.value = `Выбранное время пересекается с перерывом (${breakItem.start} – ${breakItem.end})`
         return true
       }
@@ -318,7 +387,6 @@ export function useResourcesPage() {
     return false
   }
 
-  // Проверяет пересечение выбранного диапазона с уже забронированными слотами
   function checkBookedOverlap(startIndex, endIndex) {
     const startItem = timeSlotsWithBreaks.value[startIndex]
     const endItem = timeSlotsWithBreaks.value[endIndex]
@@ -326,11 +394,11 @@ export function useResourcesPage() {
     if (!startItem || startItem.isBreak) return false
     if (!endItem || endItem.isBreak) return false
     
-    const startTime = startItem.time
-    const endTime = endItem.time
+    const startTime = timeToMinutes(startItem.time)
+    const endTime = timeToMinutes(endItem.time)
     
     for (const booked of bookedSlots.value) {
-      if (startTime < booked.end && endTime > booked.start) {
+      if (startTime < timeToMinutes(booked.end) && endTime > timeToMinutes(booked.start)) {
         errorMessage.value = `Выбранное время уже забронировано (${booked.start} – ${booked.end})`
         return true
       }
@@ -338,7 +406,6 @@ export function useResourcesPage() {
     return false
   }
 
-  // Проверяет пересечение с уже выбранными интервалами текущего бронирования
   function checkIntervalOverlap(startIndex, endIndex) {
     const startItem = timeSlotsWithBreaks.value[startIndex]
     const endItem = timeSlotsWithBreaks.value[endIndex]
@@ -346,11 +413,11 @@ export function useResourcesPage() {
     if (!startItem || startItem.isBreak) return false
     if (!endItem || endItem.isBreak) return false
     
-    const startTime = startItem.time
-    const endTime = endItem.time
+    const startTime = timeToMinutes(startItem.time)
+    const endTime = timeToMinutes(endItem.time)
     
     for (const interval of bookingIntervals.value) {
-      if (startTime < interval.end && endTime > interval.start) {
+      if (startTime < timeToMinutes(interval.end) && endTime > timeToMinutes(interval.start)) {
         errorMessage.value = `Выбранный интервал пересекается с уже выбранным (${interval.start} – ${interval.end})`
         return true
       }
@@ -358,34 +425,25 @@ export function useResourcesPage() {
     return false
   }
 
-  //получение московского времени
-  function getMoscowNow() {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' }))
-  }
-
   function isTimeInPast(dateString, timeString) {
-    const moscowNow = getMoscowNow()
+    const nowUTC = Date.now()
     const [year, month, day] = dateString.split('-').map(Number)
     const [hours, minutes] = timeString.split(':').map(Number)
-    const slotDate = new Date(year, month - 1, day, hours, minutes)
-    return slotDate < moscowNow
+    const slotUTC = Date.UTC(year, month - 1, day, hours - MSK_OFFSET_HOURS, minutes)
+    return slotUTC < nowUTC
   }
 
-  // Проверяет, доступен ли слот для выбора (не в прошлом)
   function isSlotSelectable(slotIndex) {
     if (!selectedDate.value) return true
     
     const slotTime = timeSlotsWithBreaks.value[slotIndex]
     if (!slotTime || slotTime.isBreak) return false
     
-    if (isTimeInPast(selectedDate.value, slotTime.time)) {
-      return false
-    }
+    if (isTimeInPast(selectedDate.value, slotTime.time)) return false
     
     return !isSlotBooked(slotTime.time) && !isSlotInSelectedIntervals(slotTime.time)
   }
 
-  // Проверяет, заблокирован ли слот (занят или является перерывом или уже в прошлом)
   function isSlotDisabled(slotIndex) {
     const slotItem = timeSlotsWithBreaks.value[slotIndex]
     if (!slotItem || slotItem.isBreak) return true
@@ -393,13 +451,11 @@ export function useResourcesPage() {
     return isSlotBooked(slotItem.time) || isSlotInSelectedIntervals(slotItem.time)
   }
 
-  // Проверяет, находится ли слот в выбранном диапазоне
   function isSlotInRange(slotIndex) {
     if (selectedStart.value === null || selectedEnd.value === null) return false
     return slotIndex >= selectedStart.value && slotIndex <= selectedEnd.value
   }
 
-  // Подсвечивает предварительный диапазон при наведении курсора
   function isSlotInPreviewRange(slotIndex) {
     if (selectedStart.value === null || hoverEnd.value === null) return false
     if (selectedEnd.value !== null) return false
@@ -408,7 +464,6 @@ export function useResourcesPage() {
     return slotIndex >= start && slotIndex <= end
   }
 
-  // Возвращает CSS-классы для временного слота в зависимости от его состояния
   function getSlotClass(slotIndex) {
     if (slotIndex === -1 || !timeSlotsWithBreaks.value[slotIndex]) {
       return {}
@@ -430,14 +485,6 @@ export function useResourcesPage() {
     }
   }
 
-  // Находит индекс слота по времени
-  function findSlotIndexByTime(time) {
-    return timeSlotsWithBreaks.value.findIndex(item => 
-      !item.isBreak && item.time === time
-    )
-  }
-
-  // Обрабатывает клик по временному слоту для выбора диапазона бронирования
   function handleSlotClick(slotIndex) {
     errorMessage.value = ''
     
@@ -479,23 +526,7 @@ export function useResourcesPage() {
       const start = Math.min(selectedStart.value, slotIndex)
       const end = Math.max(selectedStart.value, slotIndex)
       
-      if (checkBreakOverlap(start, end)) {
-        selectedStart.value = null
-        selectedEnd.value = null
-        hoverEnd.value = null
-        setTimeout(() => { errorMessage.value = '' }, 3000)
-        return
-      }
-      
-      if (checkBookedOverlap(start, end)) {
-        selectedStart.value = null
-        selectedEnd.value = null
-        hoverEnd.value = null
-        setTimeout(() => { errorMessage.value = '' }, 3000)
-        return
-      }
-      
-      if (checkIntervalOverlap(start, end)) {
+      if (checkBreakOverlap(start, end) || checkBookedOverlap(start, end) || checkIntervalOverlap(start, end)) {
         selectedStart.value = null
         selectedEnd.value = null
         hoverEnd.value = null
@@ -517,12 +548,10 @@ export function useResourcesPage() {
     }
   }
 
-  // Удаляет интервал бронирования из выбранных
   function removeBookingInterval(index) {
     bookingIntervals.value.splice(index, 1)
   }
 
-  // Обрабатывает наведение мыши на слот для предварительного просмотра диапазона
   function handleSlotMouseEnter(slotIndex) {
     if (selectedStart.value !== null && selectedEnd.value === null) {
       const slotItem = timeSlotsWithBreaks.value[slotIndex]
@@ -532,20 +561,17 @@ export function useResourcesPage() {
     }
   }
 
-  // Сбрасывает предварительный просмотр при уходе мыши с сетки слотов
   function handleGridMouseLeave() {
     if (selectedStart.value !== null && selectedEnd.value === null) {
       hoverEnd.value = null
     }
   }
 
-  // Показывает предупреждение при наведении на перерыв
   function showBreakWarning(breakItem) {
     errorMessage.value = `Время ${breakItem.start} – ${breakItem.end} - это перерыв. Ресурс не работает!`
     setTimeout(() => { errorMessage.value = '' }, 3000)
   }
 
-  // Полный сброс выбора времени
   function resetSelection() {
     selectedStart.value = null
     selectedEnd.value = null
@@ -555,7 +581,6 @@ export function useResourcesPage() {
     errorMessage.value = ''
   }
 
-  // Отменяет текущий выбор начального слота без завершения диапазона
   function cancelSelection() {
     if (selectedStart.value !== null && selectedEnd.value === null) {
       selectedStart.value = null
@@ -564,14 +589,12 @@ export function useResourcesPage() {
     }
   }
 
-  // Обрабатывает нажатие клавиш (Escape для отмены выбора)
   function handleKeyDown(event) {
     if (event.key === 'Escape') {
       cancelSelection()
     }
   }
 
-  // Обрабатывает изменение даты и перезагружает данные бронирования
   async function onDateChange() {
     resetSelection()
     if (selectedDate.value && selectedResource.value) {
@@ -579,10 +602,6 @@ export function useResourcesPage() {
     }
   }
 
-
-  // БРОНИРОВАНИЕ
-
-  // Отправляет запрос на бронирование выбранных интервалов
   async function bookResource() {
     if (!canBook.value) return
     
@@ -591,37 +610,20 @@ export function useResourcesPage() {
         const startTimeStr = `${selectedDate.value}T${interval.start}:00+03:00`
         const endTimeStr = `${selectedDate.value}T${interval.end}:00+03:00`
         
-        const bookingData = {
-            resource_id: selectedResource.value.id,
-            start_time: startTimeStr,
-            end_time: endTimeStr   
-        }
-
-        console.log('Бронирование:', {
-        resource_id: bookingData.resource_id,
-        start_local: `${selectedDate.value} ${interval.start}`,
-        start_utc: bookingData.start_time,
-        end_local: `${selectedDate.value} ${interval.end}`,
-        end_utc: bookingData.end_time
-      })
-
-        await api.post('/booking/', bookingData)
-        console.log('Забронировано')
+        await api.post('/booking/', {
+          resource_id: selectedResource.value.id,
+          start_time: startTimeStr,
+          end_time: endTimeStr
+        })
       }
       
       alert(`Успешно забронировано ${bookingIntervals.value.length} интервал(ов) для ресурса "${selectedResource.value.name}"!`)
       closeModal()
     } catch (e) {
-      console.error(e)
-      console.log(e.response.data)
       alert(`Ошибка бронирования: ${e.response?.data?.detail || 'Неизвестная ошибка'}`)
     }
   }
 
-
-  // УДАЛЕНИЕ РЕСУРСА
-
-  // Удаляет ресурс с подтверждением и обновляет список ресурсов
   async function deleteResource(resourceId) {
     const confirmed = confirm('Вы уверены, что хотите удалить этот ресурс? Все бронирования будут удалены вместе с ним!')
     if (!confirmed) return
@@ -630,27 +632,42 @@ export function useResourcesPage() {
       await api.delete(`/resource/${resourceId}`)
       await getResources()
     } catch (e) {
-      console.error(e)
       alert('Ошибка при удалении ресурса')
     }
   }
 
+  async function editResource(resourceId) {
+    try {
+      sessionStorage.setItem('editingResourceId', resourceId)
+      return true
+    } catch (e) {
+      alert('Ошибка при подготовке к редактированию')
+      return false
+    }
+  }
 
-  // ЖИЗНЕННЫЙ ЦИКЛ
-
-  // Добавляет обработчик клавиш при монтировании компонента
-  onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown)
+  watch([selectedTypes, searchQuery], () => {
+    resetPage()
   })
 
-  // Удаляет обработчик клавиш при демонтировании для предотвращения утечек памяти
+  onMounted(async () => {
+    window.addEventListener('keydown', handleKeyDown)
+    await getResources()
+    
+    if (route && route.value?.query?.book) {
+      const resourceId = route.value.query.book
+      const resource = resources.value.find(r => r.id == resourceId)
+      if (resource) {
+        openModal(resource)
+      }
+    }
+  })
+
   onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown)
   })
 
   return {
-    // Состояние
-    resources,
     error,
     loading,
     admin_level,
@@ -660,19 +677,14 @@ export function useResourcesPage() {
     selectedDate,
     selectedStart,
     selectedEnd,
-    hoverEnd,
     errorMessage,
     bookedSlots,
-
-    // Вычисляемые свойства
     minDate,
     maxDate,
     timeSlotsWithBreaks,
     breaks,
     canBook,
     totalBookingTime,
-
-    // Методы
     getResources,
     truncate,
     openModal,
@@ -687,7 +699,17 @@ export function useResourcesPage() {
     onDateChange,
     bookResource,
     deleteResource,
+    editResource,
     getSlotClass,
-    findSlotIndexByTime
+    selectedTypes,
+    searchQuery,
+    currentPage,
+    totalPages,
+    paginatedResources,
+    goToPage,
+    nextPage,
+    prevPage,
+    getVisiblePages,
+    handleEditResource
   }
 }
