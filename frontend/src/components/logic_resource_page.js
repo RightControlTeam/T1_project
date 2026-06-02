@@ -3,6 +3,7 @@ import api from '@/api/index'
 
 export function useResourcesPage() {
 
+  const SLOT_INTERVAL_MINUTES = 30
   // Список всех ресурсов, полученных с сервера
   const resources = ref([])
   // Сообщение об ошибке для отображения в интерфейсе
@@ -147,7 +148,18 @@ export function useResourcesPage() {
           time: `${hours}:${minutes}`,
           isBreak: false
         })
-        current.setMinutes(current.getMinutes() + 30)
+        current.setMinutes(current.getMinutes() + SLOT_INTERVAL_MINUTES)
+      }
+
+      const endHour = endTime.getHours()
+      const endMinute = endTime.getMinutes()
+
+      if (endHour === 23 && endMinute > 30) {
+        allItems.push({
+          type: 'slot',
+          time: '23:59',
+          isBreak: false
+        })
       }
       
       if (i < schedules.length - 1) {
@@ -167,35 +179,42 @@ export function useResourcesPage() {
 
 
   // ЗАГРУЗКА БРОНЕЙ
+  function formatToMoscow(utc_time) {
+    const date = new Date(utc_time)
+    return date.toLocaleString('ru-RU', {
+          timeZone: 'Europe/Moscow',
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+      })
+  }
 
-  // Загружает существующие бронирования для ресурса на выбранную дату
   async function loadBookedSlots(date, resourceId) {
     try {
       console.log('получаем текущие брони')
       const response = await api.get(`/booking/?resource_id=${resourceId}`)
       const dateStr = typeof date === 'string' ? date : formatDate(date)
       console.log('Брони получены', response)
+
       const filterBooking = response.data.filter(booking => {
-        const bookingDate = booking.start_time.split('T')[0]
-        return bookingDate === dateStr && !booking.is_cancelled
+        const bookingDate = new Date(booking.start_time)
+        const bookingDateMSK = new Date(bookingDate.toLocaleString('en-US', {
+          timeZone: 'Europe/Moscow'
+        }))
+        const bookingDateStr = formatDate(bookingDateMSK)
+        return bookingDateStr === dateStr && !booking.is_cancelled
       })
+      
       bookedSlots.value = filterBooking.map(booking => {
-        // Получаем UTC время
-        let utcStart = booking.start_time.split('T')[1]?.slice(0, 5) || ''
-        let utcEnd = booking.end_time.split('T')[1]?.slice(0, 5) || ''
-        
-        // Конвертируем в московское (прибавляем 3 часа)
-        /* const startHours = parseInt(utcStart.split(':')[0]) + 3
-        const endHours = parseInt(utcEnd.split(':')[0]) + 3
-        
-        const moscowStart = `${String(startHours).padStart(2, '0')}:${utcStart.split(':')[1]}`
-        const moscowEnd = `${String(endHours).padStart(2, '0')}:${utcEnd.split(':')[1]}` */
+        const start = formatToMoscow(new Date(booking.start_time))
+        const end = formatToMoscow(new Date(booking.end_time))
         
         return {
-          start: utcStart,
-          end: utcEnd
+          start: start,
+          end: end
         }
       })
+      
       console.log('Брони', bookedSlots.value)
     } catch (e) {
       console.error('Ошибка загрузки броней:', e)
@@ -203,20 +222,28 @@ export function useResourcesPage() {
     }
   }
 
+  function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    return hours * 60 + minutes
+  }
+
   // Проверяет, занят ли временной слот существующими бронированиями
   function isSlotBooked(slotTime) {
+    const slotMinutes = timeToMinutes(slotTime)
+
     return bookedSlots.value.some(booking => {
-      return slotTime > booking.start && slotTime < booking.end
+      return slotMinutes > timeToMinutes(booking.start) && slotMinutes < timeToMinutes(booking.end)
     })
   }
 
   // Проверяет, входит ли слот в уже выбранные интервалы бронирования
   function isSlotInSelectedIntervals(slotTime) {
+    const slotMinutes = timeToMinutes(slotTime)
+    
     return bookingIntervals.value.some(interval => {
-      return slotTime > interval.start && slotTime < interval.end
+      return slotMinutes > timeToMinutes(interval.start) && slotMinutes < timeToMinutes(interval.end)
     })
   }
-
 
   // ВЫЧИСЛЯЕМЫЕ СВОЙСТВА
   
@@ -306,11 +333,11 @@ export function useResourcesPage() {
     if (!startItem || startItem.isBreak) return false
     if (!endItem || endItem.isBreak) return false
     
-    const startTime = startItem.time
-    const endTime = endItem.time
+    const startTime = timeToMinutes(startItem.time)
+    const endTime = timeToMinutes(endItem.time)
     
     for (const breakItem of breaks.value) {
-      if (startTime < breakItem.end && endTime > breakItem.start) {
+      if (startTime < timeToMinutes(breakItem.end) && endTime > timeToMinutes(breakItem.start)) {
         errorMessage.value = `Выбранное время пересекается с перерывом (${breakItem.start} – ${breakItem.end})`
         return true
       }
@@ -326,11 +353,11 @@ export function useResourcesPage() {
     if (!startItem || startItem.isBreak) return false
     if (!endItem || endItem.isBreak) return false
     
-    const startTime = startItem.time
-    const endTime = endItem.time
+    const startTime = timeToMinutes(startItem.time)
+    const endTime = timeToMinutes(endItem.time)
     
     for (const booked of bookedSlots.value) {
-      if (startTime < booked.end && endTime > booked.start) {
+      if (startTime < timeToMinutes(booked.end) && endTime > timeToMinutes(booked.start)) {
         errorMessage.value = `Выбранное время уже забронировано (${booked.start} – ${booked.end})`
         return true
       }
@@ -346,11 +373,11 @@ export function useResourcesPage() {
     if (!startItem || startItem.isBreak) return false
     if (!endItem || endItem.isBreak) return false
     
-    const startTime = startItem.time
-    const endTime = endItem.time
+    const startTime = timeToMinutes(startItem.time)
+    const endTime = timeToMinutes(endItem.time)
     
     for (const interval of bookingIntervals.value) {
-      if (startTime < interval.end && endTime > interval.start) {
+      if (startTime < timeToMinutes(interval.end) && endTime > timeToMinutes(interval.start)) {
         errorMessage.value = `Выбранный интервал пересекается с уже выбранным (${interval.start} – ${interval.end})`
         return true
       }
@@ -360,7 +387,7 @@ export function useResourcesPage() {
 
   //получение московского времени
   function getMoscowNow() {
-    return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' }))
+    return new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' })
   }
 
   function isTimeInPast(dateString, timeString) {
