@@ -29,9 +29,9 @@ class BookingRequest(BaseModel):
         if start:
             if value <= start:
                 raise ValueError('End time should be after start time')
-            duration: timedelta = value - start
+            """ duration: timedelta = value - start
             if duration > timedelta(hours=12):
-                raise ValueError('Maximum booking time length is 12 hours')
+                raise ValueError('Maximum booking time length is 12 hours') """
         return value
 
 
