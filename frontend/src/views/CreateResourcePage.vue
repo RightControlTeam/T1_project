@@ -1,7 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/api/index'
 
+
+const router = useRouter()
 
 const SLOTS_PER_HOUR = 2           // 2 слота в час (каждые 30 минут)
 const MAX_HOUR_PER_DAY = 24        // 24 часа в сутках
@@ -17,7 +20,6 @@ const daysOfWeek = [
   { value: 5, name: 'Сб' },
   { value: 6, name: 'Вс' }
 ]
-
 
 // UI состояние
 const activeDay = ref(0)           // Какой день сейчас выбран (0-6)
@@ -58,6 +60,15 @@ const hoverEnd = ref(null)         // Конечный слот при наве�
 //Для показа всего расписания, доп окно
 const showScheduleModal = ref(false)
 
+//проверяем есть ли мод на изменения
+const isEditMode = ref(false)
+const editingResourceId = ref(null)
+
+
+function timeToIndex(timeStr) {
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  return (hours * 60 + minutes) / 30
+}
 
 // Функция: индекс слота → человеческое время (для отображения)
 // Пример: 5 → "02:30"
@@ -362,33 +373,101 @@ function clean_form() {
   errorMessage.value = ''
   activeDay.value = 0
 
+  isEditMode.value = false
+  editingResourceId.value = null
+  sessionStorage.removeItem('editingResourceId')
+
   return 
+}
+
+async function loadResourceForEdit(resourceId) {
+  try {
+    const resourceResponse = await api.get(`/resource/${resourceId}`)
+    const resource = resourceResponse.data
+    
+    form.value = {
+      name: resource.name,
+      type: resource.type,
+      description: resource.description || '',
+      is_active: resource.is_active !== undefined ? resource.is_active : true
+    }
+    
+    const schedules = resource.schedules
+    
+    for (let day = 0; day <= 6; day++) {
+      schedulesByDay.value[day].clear()
+    }
+    
+    schedules.forEach(schedule => {
+      const startIndex = timeToIndex(schedule.start_time.slice(0, 5))
+      const endIndex = timeToIndex(schedule.end_time.slice(0, 5))
+      schedulesByDay.value[schedule.day_of_week].add(`${startIndex}-${endIndex}`)
+    })
+    
+  } catch (e) {
+    console.error('Ошибка загрузки ресурса для редактирования:', e)
+    alert('Не удалось загрузить данные ресурса')
+    router.push('/resources')
+  }
 }
 
 // Отправка формы на сервер
 async function submit() {
   if (validate()) {
-    try {
-      const resourceResponse = await api.post('/resource', form.value)
-      console.log("Ресурс создан")
+    if (isEditMode.value) {
+      const confirmed = confirm('Вы уверены, что хотите изменить ресурс? Старый ресурс будет удален, а все его бронирования отменены. Новый ресурс будет создан с новым ID.')
       
-      const schedules = convertSchedulesToApiFormat()
-      for (const time of schedules) {
-        await api.post(`/resource/${resourceResponse.data.id}/schedule`, time)
+      if (!confirmed) return
+      
+      try {
+        const resourceResponse = await api.post('/resource', form.value)
+        console.log("Новый ресурс создан, ID:", resourceResponse.data.id)
+        
+        const schedules = convertSchedulesToApiFormat()
+        for (const time of schedules) {
+          await api.post(`/resource/${resourceResponse.data.id}/schedule`, time)
+        }
+
+        await api.delete(`/resource/${editingResourceId.value}`)
+        console.log("Старый ресурс удален")
+        
+        clean_form()
+        alert('Ресурс успешно изменен!')
+        
+        router.push('/resources')
+        
+      } catch (e) {
+        console.log(e)
+        alert('Ошибка при изменении ресурса: ' + (e.response?.data?.detail || e.message))
       }
-      console.log("Расписание добавлено")
-      
-      // Получаем обновленный список (для проверки) потом удалить
-      const request = await api.get('/resource')
-      console.log(request.data)
+    } else {
+      try {
+        const resourceResponse = await api.post('/resource', form.value)
+        console.log("Ресурс создан")
+        
+        const schedules = convertSchedulesToApiFormat()
+        for (const time of schedules) {
+          await api.post(`/resource/${resourceResponse.data.id}/schedule`, time)
+        }
+        
+        clean_form()
+        alert('Ресурс успешно создан!')
+        
+      } catch (e) {
+        console.log(e)
+        alert('Ошибка при создании ресурса: ' + (e.response?.data?.detail || e.message))
+      }
+    }
+  }
+}
 
+// Функция для отмены редактирования
+function cancelEdit() {
+  if (isEditMode.value) {
+    const confirmed = confirm('Отменить редактирование? Все изменения будут потеряны.')
+    if (confirmed) {
       clean_form()
-
-      alert('Ресурс успешно создан!')
-      
-    } catch (e) {
-      console.log(e)
-      alert('Ошибка при создании ресурса: ' + e.message)
+      router.push('/resources')
     }
   }
 }
@@ -407,6 +486,13 @@ function closeScheduleModal() {
 // При монтировании компонента - вешаем обработчик клавиатуры
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
+
+  const editingId = sessionStorage.getItem('editingResourceId')
+  if (editingId) {
+    isEditMode.value = true
+    editingResourceId.value = parseInt(editingId)
+    loadResourceForEdit(editingResourceId.value)
+  }
 })
 
 // При размонтировании - убираем обработчик
@@ -418,7 +504,10 @@ onUnmounted(() => {
 
 <template>
   <div class="content-container">
-    <h1>Создание ресурса</h1>
+     <h1>{{ isEditMode ? 'Редактирование ресурса' : 'Создание ресурса' }}</h1>
+     <div v-if="isEditMode" class="edit-warning">
+      Вы редактируете ресурс. После сохранения старый ресурс будет удален и создан новый с новым ID. Все старые бронирования будут отменены.
+    </div>
     <form @submit.prevent="submit">
       <div class="group-input">
         <label for="name">Название 
@@ -520,7 +609,14 @@ onUnmounted(() => {
         </div>
       </div>
       
-      <button class="create" type="submit">Создать</button>
+       <div class="form-buttons">
+        <button class="create" type="submit">
+          {{ isEditMode ? 'Изменить ресурс' : 'Создать' }}
+        </button>
+        <button v-if="isEditMode" type="button" class="cancel-edit-btn" @click="cancelEdit">
+          Отменить
+        </button>
+      </div>
     </form>
   </div>
 
@@ -552,6 +648,43 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.edit-warning {
+  background: #FFF8E1;
+  border-left: 3px solid #FFC107;
+  border-right: 3px solid #FFC107;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #F57F17;
+  font-size: 14px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.cancel-edit-btn {
+  flex: 1;
+  padding: 12px 0;
+  background: #F5F5F5;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #505050;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cancel-edit-btn:hover {
+  background: #FFEBEE;
+  border-color: #D32F2F;
+  color: #D32F2F;
+}
+
 .required {
   color: #D32F2F;
   margin-left: 4px;
