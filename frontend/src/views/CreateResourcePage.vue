@@ -358,7 +358,7 @@ async function loadResourceForEdit(resourceId) {
   } catch (e) {
     console.error('Ошибка загрузки ресурса для редактирования:', e)
     alert('Не удалось загрузить данные ресурса')
-    router.push('/resources')
+    router.push('/')
   }
 }
 
@@ -384,7 +384,7 @@ async function submit() {
         clean_form()
         alert('Ресурс успешно изменен!')
         
-        router.push('/resources')
+        router.push('/')
         
       } catch (e) {
         console.log(e)
