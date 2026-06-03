@@ -92,6 +92,47 @@ async def update_resource(resource_id:int,resource_data: schemas.ResourceUpdate,
         raise HTTPException(status_code=403, detail="Only admins can do this")
     return await crud.update_resource(db, resource_id, resource_data)
 
+@resource_router.put(
+    "/schedule/{schedule_id}",
+    response_model=schemas.ResourceScheduleOut,
+)
+async def update_resource_schedule(
+        schedule_id: int,
+        schedule_data: schemas.ResourceScheduleUpdate,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    logger.info(f"Admin {current_user.id} updating schedule {schedule_id}")
+    if not current_user.is_admin:
+        logger.warning(f"Access denied for schedule update: User {current_user.id}")
+        raise HTTPException(status_code=403, detail="Only admins can do this")
+
+    return await crud.update_resource_schedule(db, schedule_id, schedule_data)
+
+
+@resource_router.delete(
+    "/schedule/{schedule_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_resource_schedule(
+        schedule_id: int,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can do this")
+        
+    query = select(ResourceSchedule).where(ResourceSchedule.id == schedule_id)
+    result = await db.execute(query)
+    schedule = result.scalar_one_or_none()
+    
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+        
+    await db.delete(schedule)
+    await db.commit()
+    return None
+    
 
 @resource_router.delete(
     "/{resource_id}",
