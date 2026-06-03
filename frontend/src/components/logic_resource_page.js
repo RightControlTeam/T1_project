@@ -654,8 +654,8 @@ export function useResourcesPage(route, router) {
     window.addEventListener('keydown', handleKeyDown)
     await getResources()
     
-    if (route && route.value?.query?.book) {
-      const resourceId = route.value.query.book
+    if (route && route?.query?.book) {
+      const resourceId = route.query.book
       const resource = resources.value.find(r => r.id == resourceId)
       if (resource) {
         openModal(resource)
