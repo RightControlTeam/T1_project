@@ -29,6 +29,14 @@ export function useResourcesPage(route, router) {
   const currentPage = ref(1)
   const itemsPerPage = ref(12)
 
+  watch(showModal, (newVal) => {
+  if (newVal) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
+
   function truncate(str, maxLength) {
     if (!str) return 'Нет описания'
     if (str.length <= maxLength) return str
