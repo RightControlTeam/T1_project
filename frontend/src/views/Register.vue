@@ -507,7 +507,7 @@ a {
   .circle4 {
     display: none;
   }
-  .login-card {
+  .register-card {
     padding: 40px 32px; 
     width: 300px;
     gap: 24px;

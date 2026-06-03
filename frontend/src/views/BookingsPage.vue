@@ -29,7 +29,7 @@ async function editBooking(booking) {
     await api.delete(`/booking/${booking.id}`)
     router.push({
       path: '/',
-      query: { book: booking.resource_id,  openModal: 'true' }
+      query: { book: booking.resource_id }
     })
   } catch (e) {
     console.error(e)
