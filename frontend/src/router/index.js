@@ -7,6 +7,12 @@ import CreateResourcePage from '../views/CreateResourcePage.vue'
 import CreateAdminPage from '../views/CreateAdminPage.vue'
 import AdminListPage from '../views/AdminListPage.vue'
 import AllBookingsPage from '../views/AllBookingsPage.vue'
+import NotFoundPage from '../views/NotFoundPage.vue'
+
+const validPaths = [
+  '/', '/login', '/register', '/bookings',
+  '/create_resource', '/all_bookings', '/create_admin', '/admin_list', '/not-found'
+]
 
 const router = createRouter({
     history: createWebHistory(),
@@ -71,12 +77,29 @@ const router = createRouter({
                 creator_only: true
             }
         },
+        {
+            path: '/:pathMatch(.*)*',
+            name: 'not-found',
+            component: NotFoundPage,
+            meta: {
+                requires_auth: false,
+                creator_only: false
+            }
+        },
     ]
 })
 
 router.beforeEach((to, from) => {
     const is_auth = !!localStorage.getItem('token')
     const admin_level = localStorage.getItem('admin_level')
+
+    if (!validPaths.includes(to.path) && to.name !== 'not-found') {
+        return { name: 'not-found' }
+    }
+
+    if (to.name === 'not-found') {
+        return true
+    }
 
     if (to.meta.requires_auth && !is_auth) {
         return { name: 'login' }

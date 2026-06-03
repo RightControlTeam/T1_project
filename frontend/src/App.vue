@@ -22,7 +22,7 @@ import Header from './components/Header.vue'
             padding: 40px 20px 0px;
         }
     }   
-    @media (max-width: 420px) {
+    @media (max-width: 450px) {
         #app {
             padding: 40px 10px 0px;
         }
