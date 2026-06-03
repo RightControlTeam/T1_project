@@ -64,6 +64,54 @@ async def update_resource(db: AsyncSession,resource_id: int,resource_data: schem
     resource = result.scalar_one()
     return resource
 
+async def update_resource_schedule(
+    db: AsyncSession,
+    schedule_id: int,
+    schedule_data: schemas.ResourceScheduleUpdate
+) -> ResourceSchedule:
+    logger.info(f"Updating schedule ID {schedule_id}")
+
+    query = select(ResourceSchedule).where(ResourceSchedule.id == schedule_id)
+    result = await db.execute(query)
+    schedule = result.scalar_one_or_none()
+    
+    if not schedule:
+        logger.warning(f"Update failed: Schedule ID {schedule_id} not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule not found")
+
+    update_data = schedule_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(schedule, field, value)
+
+    overlap_query = select(ResourceSchedule).where(
+        ResourceSchedule.resource_id == schedule.resource_id,
+        ResourceSchedule.day_of_week == schedule.day_of_week,
+        ResourceSchedule.start_time < schedule.end_time,
+        ResourceSchedule.end_time > schedule.start_time,
+        ResourceSchedule.id != schedule.id  # <-- Важное отличие от create
+    )
+    
+    overlap_result = await db.execute(overlap_query)
+    overlapping_intervals = overlap_result.scalars().all()
+
+    if overlapping_intervals:
+        logger.info(f"Merging {len(overlapping_intervals)} overlapping intervals after update")
+        all_starts = [i.start_time for i in overlapping_intervals] + [schedule.start_time]
+        all_ends = [i.end_time for i in overlapping_intervals] + [schedule.end_time]
+
+        schedule.start_time = min(all_starts)
+        schedule.end_time = max(all_ends)
+
+        for interval in overlapping_intervals:
+            await db.delete(interval)
+
+    await db.commit()
+    await db.refresh(schedule)
+    
+    logger.info(f"Schedule {schedule_id} successfully updated")
+    return schedule
+
+
 async def delete_resource(db: AsyncSession,resource_id) -> None:
     resource = await get_resource(db,resource_id)
     if not resource:
