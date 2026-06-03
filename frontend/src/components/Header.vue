@@ -5,11 +5,18 @@
     import katalogIcon from '@/components/icons/katalog.svg'
     import addIcon from '@/components/icons/add.svg'
 
+    const validPaths = [
+    '/', '/login', '/register', '/bookings',
+    '/create_resource', '/all_bookings', '/create_admin', '/admin_list'
+    ]
     
     const router = useRouter()
     const route = useRoute()
-    const showHeader = computed(() => route.path !== '/login' && route.path !== '/register')
-
+    const showHeader = computed(() => {
+        return validPaths.includes(route.path) && 
+                route.path !== '/login' && 
+                route.path !== '/register'
+        })
     const admin_level = ref(localStorage.getItem('admin_level'))
 
 
@@ -95,19 +102,29 @@
         align-items: center;
         justify-content: center;
         text-decoration: none;
-        color: #505050
+        color: #505050;
+        white-space: nowrap;
     }
-
+    @media (max-width: 835px) {
+        nav {
+            gap: 25px;
+        }
+    }  
     @media (max-width: 650px) {
         nav {
-            gap: 30px;
+            gap: 25px;
             width: calc(100% - 100px);
         }
     }   
-     @media (max-width: 420px) {
+    @media (max-width: 570) {
         nav {
-            gap: 20px;
+            gap: 0px;
             width: calc(100% - 40px);
+        }
+    }
+     @media (max-width: 450px) {
+        .menu span {
+            white-space: normal
         }
     }  
     .menu.active span {

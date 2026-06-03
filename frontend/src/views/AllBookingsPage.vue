@@ -280,6 +280,7 @@ h2 {
 h2 {
   text-align: center;
   margin-top: 16px;
+  margin-bottom: 16px;
 }
 input {
   padding: 6px 8px;
@@ -411,6 +412,18 @@ button {
     font-size: 16px;
     color: #ED2023;
     font-weight: 400;
+}
+
+@media (max-width: 1255px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(340px, 1fr));
+  }
+}
+
+@media (max-width: 890px) {
+  .cards {
+    grid-template-columns: repeat(1, minmax(340px, 1fr));
+  }
 }
 
 </style>
