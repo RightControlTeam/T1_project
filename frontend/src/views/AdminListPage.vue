@@ -61,7 +61,6 @@ onMounted(() => {
 
 <template>
   <div class="booking-page">
-    <h2>Администраторы сайта:</h2>
     <div v-if="total_pages !== 1" class="pagination">
       <button @click="prev_page" :disabled="page===1"><</button>
       <span>{{ page }}</span>
