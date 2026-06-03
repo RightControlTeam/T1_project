@@ -424,7 +424,7 @@ function cancelEdit() {
     const confirmed = confirm('Отменить редактирование? Все изменения будут потеряны.')
     if (confirmed) {
       clean_form()
-      router.push('/resources')
+      router.push('/')
     }
   }
 }
