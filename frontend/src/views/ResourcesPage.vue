@@ -1,6 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { watch } from 'vue'
+import {  watch, ref, computed } from 'vue'
 import { useResourcesPage } from '../components/logic_resource_page.js'
 import deleteIcon from '@/components/icons/delete.svg'
 import editIcon from '@/components/icons/edit.svg'
@@ -48,6 +48,19 @@ const {
   getVisiblePages,
   handleEditResource
 } = useResourcesPage(route, router)
+
+const userTimezone = computed(() => {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const offset = -new Date().getTimezoneOffset() / 60
+    const offsetString = offset >= 0 ? `+${offset}` : `${offset}`
+    return `${timezone} (UTC${offsetString})`
+  } catch (e) {
+    const offset = -new Date().getTimezoneOffset() / 60
+    const offsetString = offset >= 0 ? `+${offset}` : `${offset}`
+    return `UTC${offsetString}`
+  }
+})
 
 watch(showModal, (newVal) => {
   if (newVal) {
@@ -154,7 +167,10 @@ watch(showModal, (newVal) => {
         <p class="description">{{ selectedResource?.description || 'Нет описания' }}</p>
         
         <div class="warning">
-          <span>ВНИМАНИЕ! Все временные интервалы указаны по <strong>Московскому времени (MSK, UTC+3)</strong></span>
+          <span>
+            Все временные интервалы указаны по <strong>Московскому времени (MSK, UTC+3)</strong>
+            <br>Ваш часовой пояс: <strong>{{ userTimezone }}</strong>
+          </span>
         </div>
         
         <div class="form-group">
