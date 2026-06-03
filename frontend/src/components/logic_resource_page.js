@@ -33,8 +33,20 @@ export function useResourcesPage(route, router) {
       loading.value = true
       
       const request = await api.get('/resource')
-      resources.value = request.data.items || request.data
+      let resourcesData = request.data.items || request.data
       
+      resources.value = resourcesData.map(resource => {
+        if (resource.schedules && Array.isArray(resource.schedules)) {
+          resource.schedules.sort((a, b) => {
+            if (a.day_of_week !== b.day_of_week) {
+              return a.day_of_week - b.day_of_week
+            }
+            return a.start_time.localeCompare(b.start_time)
+          })
+        }
+        return resource
+      })
+        
     } catch (e) {
       error.value = e.response?.data?.detail || 'Ошибка загрузки ресурсов'
     } finally {
