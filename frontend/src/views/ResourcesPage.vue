@@ -1,5 +1,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import { watch } from 'vue'
 import { useResourcesPage } from '../components/logic_resource_page.js'
 import deleteIcon from '@/components/icons/delete.svg'
 import editIcon from '@/components/icons/edit.svg'
@@ -47,6 +48,14 @@ const {
   getVisiblePages,
   handleEditResource
 } = useResourcesPage(route, router)
+
+watch(showModal, (newVal) => {
+  if (newVal) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
 </script>
 
 <template>

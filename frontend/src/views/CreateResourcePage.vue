@@ -3,14 +3,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
 
-
 const router = useRouter()
 
-const SLOTS_PER_HOUR = 2           // 2 слота в час (каждые 30 минут)
-const MAX_HOUR_PER_DAY = 24        // 24 часа в сутках
-const TOTAL_SLOTS = MAX_HOUR_PER_DAY * SLOTS_PER_HOUR  // 48 слотов
+const SLOTS_PER_HOUR = 2
+const MAX_HOUR_PER_DAY = 24
+const TOTAL_SLOTS = MAX_HOUR_PER_DAY * SLOTS_PER_HOUR
 
-// Дни недели: 0-ПН, 1-ВТ, 2-СР, 3-ЧТ, 4-ПТ, 5-СБ, 6-ВС
 const daysOfWeek = [
   { value: 0, name: 'Пн' },
   { value: 1, name: 'Вт' },
@@ -21,57 +19,45 @@ const daysOfWeek = [
   { value: 6, name: 'Вс' }
 ]
 
-// UI состояние
-const activeDay = ref(0)           // Какой день сейчас выбран (0-6)
-const errorMessage = ref('')       // Текст ошибки для показа пользователю
+const activeDay = ref(0)
+const errorMessage = ref('')
 
-// Состояние формы
 const form = ref({
-  name: '',                        // Название ресурса
-  type: '',                        // Тип ресурса (laptop/room/projector/other)
-  description: '',                 // Описание ресурса
-  is_active: true                  // Активен ли ресурс
+  name: '',
+  type: '',
+  description: '',
+  is_active: true
 })
 
-// Ошибки валидации формы
 const errors = ref({
-  name: '',                        // Ошибка поля "Название"
-  type: '',                        // Ошибка поля "Тип"
-  schedules: ''                    // Ошибка поля "Расписание"
+  name: '',
+  type: '',
+  schedules: ''
 })
 
-// Хранилище расписания для всех дней
-// Ключ: день недели (0-6)
-// Значение: Set из строк-диапазонов вида "начало-конец". Начало и конец индексы ячеек.
 const schedulesByDay = ref({
-  0: new Set(),  // Понедельник
-  1: new Set(),  // Вторник
-  2: new Set(),  // Среда
-  3: new Set(),  // Четверг
-  4: new Set(),  // Пятница
-  5: new Set(),  // Суббота
-  6: new Set()   // Воскресенье
+  0: new Set(),
+  1: new Set(),
+  2: new Set(),
+  3: new Set(),
+  4: new Set(),
+  5: new Set(),
+  6: new Set()
 })
 
-// Состояния для выделения интервалов мышкой
-const selectedStart = ref(null)    // Начальный слот выделения (индекс)
-const hoverEnd = ref(null)         // Конечный слот при наведении (индекс)
+const selectedStart = ref(null)
+const hoverEnd = ref(null)
 
-//Для показа всего расписания, доп окно
 const showScheduleModal = ref(false)
 
-//проверяем есть ли мод на изменения
 const isEditMode = ref(false)
 const editingResourceId = ref(null)
-
 
 function timeToIndex(timeStr) {
   const [hours, minutes] = timeStr.split(':').map(Number)
   return (hours * 60 + minutes) / 30
 }
 
-// Функция: индекс слота → человеческое время (для отображения)
-// Пример: 5 → "02:30"
 function indexToLabel(index) {
   if (index === 48) return '23:59'
   const time = new Date()
@@ -80,8 +66,6 @@ function indexToLabel(index) {
   return time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 }
 
-// Функция: индекс слота → время для API (с секундами)
-// Пример: 5 → "02:30:00"
 function indexToApi(index) {
   if (index === 48) return '23:59:00'
   const time = new Date()
@@ -90,8 +74,6 @@ function indexToApi(index) {
   return time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit'})
 }
 
-
-// Создает массив всех временных слотов (0-48)
 const timeSlots = computed(() => {
   const slots = []
   for (let i = 0; i <= TOTAL_SLOTS; i++) {
@@ -103,7 +85,6 @@ const timeSlots = computed(() => {
   return slots
 })
 
-// Получает список сохраненных интервалов для активного дня
 const savedRangesForActiveDay = computed(() => {
   const ranges = Array.from(schedulesByDay.value[activeDay.value])
   return ranges.map(range => {
@@ -120,7 +101,6 @@ const savedRangesForActiveDay = computed(() => {
   })
 })
 
-// Получить все интервалы в удобном формате для отображения
 const allSchedulesFormatted = computed(() => {
   const result = []
   const daysNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС']
@@ -151,8 +131,6 @@ const allSchedulesFormatted = computed(() => {
   return result
 })
 
-
-// Конвертирует внутреннее хранилище в формат для отправки на сервер
 function convertSchedulesToApiFormat() {
   const schedules = []
   
@@ -173,8 +151,6 @@ function convertSchedulesToApiFormat() {
   return schedules
 }
 
-// Проверяет, входит ли слот в какой-либо сохраненный диапазон
-// Возвращает: { inRange: true/false, isStart: true/false, isEnd: true/false }
 function isSlotInSavedRange(day, slotIndex) {
   const ranges = schedulesByDay.value[day]
   for (const range of ranges) {
@@ -186,8 +162,6 @@ function isSlotInSavedRange(day, slotIndex) {
   return { inRange: false, isStart: false, isEnd: false }
 }
 
-// Проверяет, пересекается ли новый интервал с существующими
-// Возвращает: { overlaps: true/false, overlappingRange, startLabel, endLabel }
 function checkRangeOverlap(day, newStart, newEnd) {
   const ranges = schedulesByDay.value[day]
   
@@ -207,8 +181,6 @@ function checkRangeOverlap(day, newStart, newEnd) {
   return { overlaps: false }
 }
 
-
-// Проверяет, входит ли слот в превью-выделение (при наведении мыши)
 function isSlotInPreviewRange(slotIndex) {
   if (selectedStart.value === null || hoverEnd.value === null) return false
   const start = Math.min(selectedStart.value, hoverEnd.value)
@@ -216,30 +188,25 @@ function isSlotInPreviewRange(slotIndex) {
   return slotIndex >= start && slotIndex <= end
 }
 
-// Определяет CSS классы для слота (цвет и стиль)
 function getSlotClass(slotIndex) {
   const saved = isSlotInSavedRange(activeDay.value, slotIndex)
   const inPreview = isSlotInPreviewRange(slotIndex)
   
   return {
-    'slot-selected': saved.inRange,              // Уже сохраненный интервал
-    'slot-start': saved.isStart,                 // Начало сохраненного интервала
-    'slot-end': saved.isEnd,                     // Конец сохраненного интервала
-    'slot-preview': inPreview && !saved.inRange  // Временное выделение
+    'slot-selected': saved.inRange,
+    'slot-start': saved.isStart,
+    'slot-end': saved.isEnd,
+    'slot-preview': inPreview && !saved.inRange
   }
 }
 
-
-// Отмена текущего выделения
 function cancelSelection() {
   selectedStart.value = null
   hoverEnd.value = null
   errorMessage.value = ''
 }
 
-// Обработчик клика по слоту 
 function handleSlotClick(slotIndex) {
-  // Случай 1: Кликнули на тот же слот, который уже выбран как начало
   if (selectedStart.value === slotIndex) {
     errorMessage.value = `Выберите другую ячейку для завершения интервала (${indexToLabel(slotIndex)} уже выбрана как начало)`
     
@@ -250,7 +217,6 @@ function handleSlotClick(slotIndex) {
     return
   }
   
-
   if (selectedStart.value === null) {
     if (isSlotInSavedRange(activeDay.value, slotIndex).inRange) {
       errorMessage.value = `Выберите другую ячейку для создания интервала (${indexToLabel(slotIndex)} уже выбрана в другом интервале)`
@@ -271,7 +237,6 @@ function handleSlotClick(slotIndex) {
     
     const overlapCheck = checkRangeOverlap(activeDay.value, start, end)
     
-    // Если есть пересечение с существующими интервалами
     if (overlapCheck.overlaps) {
       errorMessage.value = `Нельзя создать диапазон! Он пересекается с уже существующим: ${overlapCheck.startLabel} – ${overlapCheck.endLabel}`
       
@@ -285,7 +250,6 @@ function handleSlotClick(slotIndex) {
       return 
     }
     
-    // Нет пересечений - сохраняем интервал
     schedulesByDay.value[activeDay.value].add(`${start}-${end}`)
     
     selectedStart.value = null
@@ -293,42 +257,34 @@ function handleSlotClick(slotIndex) {
   }
 }
 
-// Обработчик наведения мыши на слот
 function handleSlotMouseEnter(slotIndex) {
   if (selectedStart.value !== null) {
     hoverEnd.value = slotIndex
   }
 }
 
-// Обработчик ухода мыши с сетки
 function handleGridMouseLeave() {
   if (selectedStart.value !== null) {
     hoverEnd.value = null
   }
 }
 
-// Удаление диапазона по клику на тег
 function removeRange(day, range) {
   schedulesByDay.value[day].delete(range)
 }
 
-// Смена активного дня
 function changeActiveDay(dayValue) {
   activeDay.value = dayValue
   selectedStart.value = null
   hoverEnd.value = null
 }
 
-
-// Обработчик клавиатуры esc
 function handleKeyDown(event) {
   if (event.key === 'Escape') {
     cancelSelection()
   }
 }
 
-
-// Проверка всех полей формы перед отправкой
 function validate() {
   errors.value = {
     name: '',
@@ -338,19 +294,16 @@ function validate() {
   
   let is_valid = true
   
-  // Проверка названия
   if (!form.value.name || form.value.name.trim() === '') {
     errors.value.name = 'Обязательное поле!'
     is_valid = false
   }
   
-  // Проверка типа
   if (!form.value.type) {
     errors.value.type = 'Обязательное поле!'
     is_valid = false
   }
   
-  // Проверка расписания (должен быть хотя бы один интервал)
   const schedules = convertSchedulesToApiFormat()
   if (schedules.length === 0) {
     errors.value.schedules = 'Выберите хотя бы один временной интервал!'
@@ -376,8 +329,6 @@ function clean_form() {
   isEditMode.value = false
   editingResourceId.value = null
   sessionStorage.removeItem('editingResourceId')
-
-  return 
 }
 
 async function loadResourceForEdit(resourceId) {
@@ -411,7 +362,6 @@ async function loadResourceForEdit(resourceId) {
   }
 }
 
-// Отправка формы на сервер
 async function submit() {
   if (validate()) {
     if (isEditMode.value) {
@@ -454,14 +404,21 @@ async function submit() {
         alert('Ресурс успешно создан!')
         
       } catch (e) {
-        console.log(e)
-        alert('Ошибка при создании ресурса: ' + (e.response?.data?.detail || e.message))
+        const error = e.response
+        console.log('response: ', error)
+        
+        if (!error) {
+          alert('Сервер не отвечает')
+        } else if (error.status === 401) {
+          alert('Войдите заново...')
+        } else {
+          alert('Ошибка при создании ресурса: ' + (error.msg || e.message))
+        }
       }
     }
   }
 }
 
-// Функция для отмены редактирования
 function cancelEdit() {
   if (isEditMode.value) {
     const confirmed = confirm('Отменить редактирование? Все изменения будут потеряны.')
@@ -472,18 +429,14 @@ function cancelEdit() {
   }
 }
 
-
-// Функция для показа окна со всем расписанием
 function viewAllSchedule() {
   showScheduleModal.value = true
 }
 
-// Функция для закрытия окна
 function closeScheduleModal() {
   showScheduleModal.value = false
 }
 
-// При монтировании компонента - вешаем обработчик клавиатуры
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
 
@@ -495,7 +448,6 @@ onMounted(() => {
   }
 })
 
-// При размонтировании - убираем обработчик
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
 })
@@ -620,7 +572,6 @@ onUnmounted(() => {
     </form>
   </div>
 
-  <!-- Доп окно всего расписания -->
   <div v-if="showScheduleModal" class="modal-overlay" @click="closeScheduleModal">
     <div class="modal-content" @click.stop>
       <div class="modal-header">
@@ -1023,7 +974,6 @@ select:valid {
   background: #4A1ACC;
 }
 
-/*Окно со всем расписанием*/
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1168,7 +1118,6 @@ select:valid {
   background: #4A1ACC;
 }
 
-/* Адаптация для мобильных для доп окошка*/
 @media (max-width: 600px) {
   .modal-content {
     width: 95%;

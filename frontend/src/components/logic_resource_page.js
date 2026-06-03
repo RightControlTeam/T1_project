@@ -7,9 +7,11 @@ export function useResourcesPage(route, router) {
   const slotsCache = new Map()
   
   const resources = ref([])
+  const allBookingsCache = ref([])
   const error = ref('')
   const loading = ref(true)
   const admin_level = ref(localStorage.getItem('admin_level'))
+  const isBookingNow = ref(false)
 
   const showModal = ref(false)
   const selectedResource = ref(null)
@@ -27,20 +29,13 @@ export function useResourcesPage(route, router) {
   const currentPage = ref(1)
   const itemsPerPage = ref(12)
 
-  async function getResources() {
-    try {
-      error.value = ''
-      loading.value = true
-      
-      const request = await api.get('/resource')
-      resources.value = request.data.items || request.data
-      
-    } catch (e) {
-      error.value = e.response?.data?.detail || 'Ошибка загрузки ресурсов'
-    } finally {
-      loading.value = false
-    }
+  watch(showModal, (newVal) => {
+  if (newVal) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
   }
+})
 
   function truncate(str, maxLength) {
     if (!str) return 'Нет описания'
@@ -169,30 +164,6 @@ export function useResourcesPage(route, router) {
       hour: '2-digit',
       minute: '2-digit'
     })
-  }
-
-  async function loadBookedSlots(date, resourceId) {
-    try {
-      const response = await api.get(`/booking/?resource_id=${resourceId}`)
-      const dateStr = typeof date === 'string' ? date : formatDate(date)
-
-      const filterBooking = response.data.filter(booking => {
-        const bookingDate = new Date(booking.start_time)
-        const bookingDateMSK = new Date(bookingDate.toLocaleString('en-US', {
-          timeZone: 'Europe/Moscow'
-        }))
-        const bookingDateStr = formatDate(bookingDateMSK)
-        return bookingDateStr === dateStr && !booking.is_cancelled
-      })
-      
-      bookedSlots.value = filterBooking.map(booking => ({
-        start: formatToMoscow(new Date(booking.start_time)),
-        end: formatToMoscow(new Date(booking.end_time))
-      }))
-    } catch (e) {
-      console.error('Ошибка загрузки броней:', e)
-      bookedSlots.value = []
-    }
   }
 
   function timeToMinutes(timeStr) {
@@ -336,21 +307,191 @@ export function useResourcesPage(route, router) {
     }
   }
 
+  function filterBookingsByDate(date) {
+    const dateStr = typeof date === 'string' ? date : formatDate(date)
+    
+    return allBookingsCache.value
+      .filter(booking => {
+        const bookingDate = new Date(booking.start_time)
+        const bookingDateMSK = new Date(bookingDate.toLocaleString('en-US', {
+          timeZone: 'Europe/Moscow'
+        }))
+        const bookingDateStr = formatDate(bookingDateMSK)
+        return bookingDateStr === dateStr
+      })
+      .map(booking => ({
+        start: formatToMoscow(new Date(booking.start_time)),
+        end: formatToMoscow(new Date(booking.end_time))
+      }))
+  }
+
+  async function getResources() {
+    try {
+      error.value = ''
+      loading.value = true
+      
+      const request = await api.get('/resource')
+      let resourcesData = request.data.items || request.data
+      
+      resources.value = resourcesData.map(resource => {
+        if (resource.schedules && Array.isArray(resource.schedules)) {
+          resource.schedules.sort((a, b) => {
+            if (a.day_of_week !== b.day_of_week) {
+              return a.day_of_week - b.day_of_week
+            }
+            return a.start_time.localeCompare(b.start_time)
+          })
+        }
+        return resource
+      })
+        
+    } catch (e) {
+      error.value = e.response?.data?.detail || 'Ошибка загрузки ресурсов'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function loadAllBookingsForResource(resourceId) {
+    try {
+      const response = await api.get(`/booking/?resource_id=${resourceId}`)
+      allBookingsCache.value = response.data.filter(booking => !booking.is_cancelled)
+      return allBookingsCache.value
+    } catch (e) {
+      console.error('Ошибка загрузки броней:', e)
+      allBookingsCache.value = []
+      return []
+    }
+  }
+
+  function updateBookedSlotsForDate(date) {
+    if (!selectedResource.value) return []
+    
+    const filtered = filterBookingsByDate(date)
+    bookedSlots.value = filtered
+    return filtered
+  }
+
   async function openModal(resource) {
     selectedResource.value = resource
     showModal.value = true
     selectedDate.value = minDate.value
     resetSelection()
-    await loadBookedSlots(selectedDate.value, resource.id)
+
+    await loadAllBookingsForResource(resource.id)
+    updateBookedSlotsForDate(selectedDate.value)
 
     if (window.bookingRefreshInterval) {
       clearInterval(window.bookingRefreshInterval)
     }
     window.bookingRefreshInterval = setInterval(async () => {
-      if (showModal.value && selectedDate.value && selectedResource.value) {
-        await loadBookedSlots(selectedDate.value, selectedResource.value.id)
+      if (showModal.value && selectedResource.value) {
+        await loadAllBookingsForResource(selectedResource.value.id)
+        await updateBookedSlotsForDate(selectedDate.value)
       }
-    }, 30000)
+    }, 3000)
+  }
+
+  async function bookResource() {
+    if (!canBook.value) return
+
+    if (isBookingNow.value) {
+      alert('Бронирование уже выполняется, подождите...')
+      return
+    }
+
+    isBookingNow.value = true
+    
+    try {
+      await loadAllBookingsForResource(selectedResource.value.id)
+      updateBookedSlotsForDate(selectedDate.value)
+      
+      const conflictingIntervals = []
+      const availableIntervals = []
+      
+      for (const interval of bookingIntervals.value) {
+        const intervalStart = timeToMinutes(interval.start)
+        const intervalEnd = timeToMinutes(interval.end)
+        
+        let isConflict = false
+        for (const booked of bookedSlots.value) {
+          const bookedStart = timeToMinutes(booked.start)
+          const bookedEnd = timeToMinutes(booked.end)
+          
+          if (intervalStart < bookedEnd && intervalEnd > bookedStart) {
+            isConflict = true
+            conflictingIntervals.push(interval)
+            break
+          }
+        }
+        
+        if (!isConflict) {
+          availableIntervals.push(interval)
+        }
+      }
+
+      if (conflictingIntervals.length > 0) {
+        bookingIntervals.value = availableIntervals
+        
+        alert(`Извините, выбранные вами интервалы уже забронировали...`)
+        return
+      }
+
+      const promises = bookingIntervals.value.map(interval => {
+        const startTimeStr = `${selectedDate.value}T${interval.start}:00+03:00`
+        const endTimeStr = `${selectedDate.value}T${interval.end}:00+03:00`
+        
+        return api.post('/booking/', {
+          resource_id: selectedResource.value.id,
+          start_time: startTimeStr,
+          end_time: endTimeStr
+        })
+      })
+      
+      await Promise.all(promises)
+      
+      alert(`Успешно забронировано ${bookingIntervals.value.length} интервал(ов) для ресурса "${selectedResource.value.name}"!`)
+      closeModal()
+      
+    } catch (e) {
+      const error = e.response
+      console.log('response: ', error)
+      
+      if (!error) {
+        alert('Сервер не отвечает')
+      } else if (error.status === 409) {
+        alert('Извините, кто-то уже забронировал нужное вам время. Обновляем данные...')
+        
+        await loadAllBookingsForResource(selectedResource.value.id)
+        updateBookedSlotsForDate(selectedDate.value)
+        
+        const stillAvailable = bookingIntervals.value.filter(interval => {
+          const intervalStart = timeToMinutes(interval.start)
+          const intervalEnd = timeToMinutes(interval.end)
+          
+          return !bookedSlots.value.some(booked => {
+            const bookedStart = timeToMinutes(booked.start)
+            const bookedEnd = timeToMinutes(booked.end)
+            return intervalStart < bookedEnd && intervalEnd > bookedStart
+          })
+        })
+        
+        const removedCount = bookingIntervals.value.length - stillAvailable.length
+        bookingIntervals.value = stillAvailable
+        
+        if (removedCount > 0) {
+          alert(`Удалено ${removedCount} конфликтующих интервалов. Осталось ${bookingIntervals.value.length} интервалов.`)
+        }
+        
+        if (bookingIntervals.value.length === 0) {
+          alert('Все выбранные интервалы уже заняты. Пожалуйста, выберите другие.')
+        }
+      } else {
+        alert(`Ошибка бронирования: ${error?.data?.detail || 'Неизвестная ошибка'}`)
+      }
+    } finally {
+      isBookingNow.value = false
+    }
   }
 
   function closeModal() {
@@ -359,6 +500,7 @@ export function useResourcesPage(route, router) {
     selectedDate.value = ''
     resetSelection()
     slotsCache.clear()
+    allBookingsCache.value = []
 
     if (window.bookingRefreshInterval) {
       clearInterval(window.bookingRefreshInterval)
@@ -598,29 +740,7 @@ export function useResourcesPage(route, router) {
   async function onDateChange() {
     resetSelection()
     if (selectedDate.value && selectedResource.value) {
-      await loadBookedSlots(selectedDate.value, selectedResource.value.id)
-    }
-  }
-
-  async function bookResource() {
-    if (!canBook.value) return
-    
-    try {
-      for (const interval of bookingIntervals.value) {
-        const startTimeStr = `${selectedDate.value}T${interval.start}:00+03:00`
-        const endTimeStr = `${selectedDate.value}T${interval.end}:00+03:00`
-        
-        await api.post('/booking/', {
-          resource_id: selectedResource.value.id,
-          start_time: startTimeStr,
-          end_time: endTimeStr
-        })
-      }
-      
-      alert(`Успешно забронировано ${bookingIntervals.value.length} интервал(ов) для ресурса "${selectedResource.value.name}"!`)
-      closeModal()
-    } catch (e) {
-      alert(`Ошибка бронирования: ${e.response?.data?.detail || 'Неизвестная ошибка'}`)
+      updateBookedSlotsForDate(selectedDate.value)
     }
   }
 
